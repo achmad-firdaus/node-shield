@@ -19,9 +19,10 @@ class NodeShield {
         database: process.env.DB_NAME || 'node_shield',
         user: process.env.DB_USER || 'shield_user',
         password: process.env.DB_PASSWORD || 'shield_password',
-        max: 20,
+        max: 100,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
+        connectionTimeoutMillis: 5000,
+        statement_timeout: 10000
       });
 
       this.pool.on('error', (err) => {
