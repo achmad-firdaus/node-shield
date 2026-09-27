@@ -1,11 +1,10 @@
 node_modules/
 npm-debug.log
 *.db
-*.json
+config.json
+attacks.json
 .env
 .env.local
-attacks.db
-attacks.json
 .DS_Store
 dist/
 build/

@@ -28,6 +28,8 @@ services:
       DB_USER: shield_user
       DB_PASSWORD: shield_password
       PORT: 3001
+    command: >
+      sh -c "npm run migrate && npm start"
     ports:
       - "3001:3001"
     depends_on:

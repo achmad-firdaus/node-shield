@@ -1,0 +1,41 @@
+{
+  "name": "node-shield",
+  "version": "0.2.0",
+  "description": "Production-grade runtime protection for Node.js applications. Detects and blocks SQL injection, RCE, path traversal, XSS, command injection, NoSQL, XXE, and LDAP attacks in real-time.",
+  "main": "index.js",
+  "bin": {
+    "node-shield": "cli.js"
+  },
+  "scripts": {
+    "start": "node app-standalone.js",
+    "test": "node test.js",
+    "server": "PORT=3000 node app-standalone.js",
+    "cli": "node cli.js",
+    "migrate": "node migrate.js",
+    "migrate:reset": "node migrate.js --reset"
+  },
+  "keywords": [
+    "security",
+    "runtime-protection",
+    "node.js"
+  ],
+  "author": {
+    "name": "Achmad Firdaus",
+    "email": "achmadfirdaus244@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/achmad-firdaus/node-shield"
+  },
+  "bugs": {
+    "url": "https://github.com/achmad-firdaus/node-shield/issues"
+  },
+  "homepage": "https://github.com/achmad-firdaus/node-shield#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
+}
