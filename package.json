@@ -8,11 +8,15 @@
   },
   "scripts": {
     "start": "node app-standalone.js",
-    "test": "node test.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:integration": "node test.js",
     "server": "PORT=3000 node app-standalone.js",
     "cli": "node cli.js",
     "migrate": "node migrate.js",
-    "migrate:reset": "node migrate.js --reset"
+    "migrate:reset": "node migrate.js --reset",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "security",
@@ -37,5 +41,12 @@
   "license": "MIT",
   "dependencies": {
     "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "supertest": "^6.3.0",
+    "eslint": "^8.0.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0"
   }
 }

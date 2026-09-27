@@ -1,29 +1,81 @@
-# Development
+# Test files and development
 test.js
+test/
+__tests__/
+*.test.js
+*.spec.js
+jest.config.js
 quick-test.sh
 examples-express.js
+.env
+.env.local
+.env.*.local
+
+# Git and version control
 .git
 .gitignore
-.playwright-mcp
+.gitattributes
 
-# Documentation
+# IDE and editor files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+.editor-config
+
+# Documentation and examples
 DESIGN.md
 PROJECT_STATUS.md
 README-DOCKER.md
 DEPLOYMENT.md
+SECURITY.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+CHANGELOG.md
+.env.example
 
-# Docker
+# Docker and infrastructure
 Dockerfile
 docker-compose.yml
 init.sql
+.dockerignore
 
-# Dashboard demos
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Dashboard demos and builds
 dashboard-*.html
 dashboard-*.png
+dist/
+build/
 
-# Backups
+# Backups and temporary files
 *.bak
+*.backup
+*.tmp
+*.log
 
-# Node
+# Node modules (handled by npm)
 node_modules/
 package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Linting and code quality
+.eslintrc.json
+.eslintignore
+.prettierrc
+.prettierignore
+
+# Development dependencies tracking
+.npm/
+.cache/
+
+# MCP and misc
+.playwright-mcp
