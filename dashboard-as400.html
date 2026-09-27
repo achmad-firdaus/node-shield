@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NODE SHIELD SECURITY MONITOR - AS/400</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #001a00;
+      color: #00ff00;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .screen {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    /* Header Bar */
+    .header {
+      background-color: #001a00;
+      border-bottom: 2px solid #00ff00;
+      padding: 8px 4px;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .header-line {
+      margin: 2px 0;
+      font-size: 11px;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 8px;
+      background-color: #001a00;
+    }
+
+    /* Menu Section */
+    .menu-section {
+      margin-bottom: 16px;
+    }
+
+    .menu-title {
+      font-weight: bold;
+      text-decoration: underline;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+
+    .menu-item {
+      padding-left: 8px;
+      margin: 2px 0;
+    }
+
+    /* Data Fields */
+    .field-row {
+      display: grid;
+      grid-template-columns: 35% 65%;
+      gap: 8px;
+      margin: 2px 0;
+      padding: 1px 0;
+    }
+
+    .field-label {
+      text-align: right;
+      padding-right: 8px;
+      font-weight: bold;
+    }
+
+    .field-value {
+      font-weight: normal;
+      font-family: 'Courier New', monospace;
+    }
+
+    .field-value.warning {
+      color: #ffff00;
+      font-weight: bold;
+    }
+
+    .field-value.critical {
+      color: #ff6666;
+      font-weight: bold;
+    }
+
+    .field-value.normal {
+      color: #00ff00;
+    }
+
+    /* Separator Lines */
+    .separator {
+      border-top: 1px solid #00ff00;
+      margin: 6px 0;
+    }
+
+    /* Table/List Sections */
+    .list-section {
+      margin-top: 12px;
+    }
+
+    .list-header {
+      font-weight: bold;
+      border-bottom: 1px solid #00ff00;
+      padding-bottom: 2px;
+      margin-bottom: 4px;
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: 16% 16% 16% 24% 16% 12%;
+      gap: 0;
+    }
+
+    .list-header-col {
+      padding: 0 2px;
+      text-align: left;
+    }
+
+    .list-row {
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: 16% 16% 16% 24% 16% 12%;
+      gap: 0;
+      padding: 0;
+      margin: 1px 0;
+    }
+
+    .list-row:hover {
+      background-color: #003300;
+    }
+
+    .list-col {
+      padding: 0 2px;
+      text-align: left;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: clip;
+    }
+
+    .list-col.severity-critical {
+      color: #ff6666;
+      font-weight: bold;
+    }
+
+    .list-col.severity-high {
+      color: #ffff00;
+      font-weight: bold;
+    }
+
+    .list-col.severity-medium {
+      color: #ffff00;
+    }
+
+    .list-col.severity-low {
+      color: #00ff00;
+    }
+
+    /* Status/Options Line */
+    .status-line {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #001a00;
+      border-top: 1px solid #00ff00;
+      padding: 4px 8px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      height: 24px;
+      align-items: center;
+    }
+
+    .status-left {
+      flex: 1;
+    }
+
+    .status-center {
+      text-align: center;
+      flex: 1;
+    }
+
+    .status-right {
+      text-align: right;
+      flex: 1;
+    }
+
+    .status-key {
+      display: inline-block;
+      margin: 0 12px;
+      font-weight: bold;
+    }
+
+    .status-key .key {
+      color: #ffff00;
+      font-weight: bold;
+    }
+
+    .status-key .desc {
+      color: #00ff00;
+      margin-left: 2px;
+    }
+
+    /* Tabs/Options */
+    .options {
+      display: flex;
+      gap: 16px;
+      margin: 8px 0;
+      padding: 4px 0;
+      border-bottom: 1px solid #00ff00;
+      font-size: 11px;
+    }
+
+    .option {
+      cursor: pointer;
+      padding: 2px 4px;
+      font-weight: bold;
+    }
+
+    .option.active {
+      background-color: #003300;
+      color: #ffff00;
+    }
+
+    .option:hover {
+      background-color: #002200;
+    }
+
+    /* Content Boxes */
+    .content-section {
+      display: none;
+      margin-bottom: 80px;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    .box-title {
+      font-weight: bold;
+      text-decoration: underline;
+      margin-top: 8px;
+      margin-bottom: 6px;
+    }
+
+    /* Response message area */
+    .response-area {
+      margin-top: 20px;
+      margin-bottom: 80px;
+      padding: 4px;
+    }
+
+    .prompt {
+      color: #ffff00;
+      font-weight: bold;
+    }
+
+    .input-line {
+      margin: 4px 0;
+      color: #00ff00;
+    }
+
+    .message {
+      color: #00ff00;
+      margin: 2px 0;
+    }
+
+    .message.error {
+      color: #ff6666;
+    }
+
+    @media (max-width: 1200px) {
+      .list-header, .list-row {
+        grid-template-columns: 20% 20% 15% 20% 15% 10%;
+        font-size: 10px;
+      }
+
+      body {
+        font-size: 11px;
+      }
+    }
+
+    /* Print-like styling */
+    .field-row, .menu-item, .input-line {
+      letter-spacing: 0.05em;
+    }
+
+    /* Typewriter effect */
+    @keyframes typewriter {
+      from {
+        width: 0;
+      }
+      to {
+        width: 100%;
+      }
+    }
+
+    .typewriter {
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-line">                    NODE SHIELD SECURITY MONITOR</div>
+      <div class="header-line">                    MAINFRAME AUDIT SYSTEM v1.0</div>
+      <div class="header-line">═══════════════════════════════════════════════════════════════════</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- System Status -->
+      <div class="menu-section">
+        <div class="menu-title">SYSTEM STATUS</div>
+
+        <div class="field-row">
+          <div class="field-label">SYSTEM ID:</div>
+          <div class="field-value">NODE-SHIELD-01</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">STATUS:</div>
+          <div class="field-value normal">OPERATIONAL</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">PROTECTION MODE:</div>
+          <div class="field-value normal">ACTIVE</div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Security Metrics -->
+      <div class="menu-section">
+        <div class="menu-title">ATTACK METRICS</div>
+
+        <div class="field-row">
+          <div class="field-label">TOTAL ATTACKS BLOCKED:</div>
+          <div class="field-value normal" id="total">0000</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">CRITICAL SEVERITY:</div>
+          <div class="field-value critical" id="critical">00</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">RATE LIMIT ALERTS:</div>
+          <div class="field-value warning" id="ratelimit">00</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">SQL INJECTION ATTEMPTS:</div>
+          <div class="field-value normal" id="sql">00</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">RCE ATTEMPTS:</div>
+          <div class="field-value critical" id="rce">00</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">XSS ATTACKS:</div>
+          <div class="field-value warning" id="xss">00</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">OTHER THREATS:</div>
+          <div class="field-value normal" id="other">00</div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Display Options -->
+      <div class="options">
+        <div class="option active" onclick="selectOption(this, 'attacks')">1=RECENT ATTACKS</div>
+        <div class="option" onclick="selectOption(this, 'attackers')">2=TOP ATTACKERS</div>
+        <div class="option" onclick="selectOption(this, 'stats')">3=STATISTICS</div>
+        <div class="option" onclick="location.reload()">4=REFRESH</div>
+      </div>
+
+      <!-- Recent Attacks Section -->
+      <div id="attacks" class="content-section active">
+        <div class="box-title">RECENT ATTACK LOG</div>
+        <div class="list-header">
+          <div class="list-header-col">TIME</div>
+          <div class="list-header-col">SEVERITY</div>
+          <div class="list-header-col">TYPE</div>
+          <div class="list-header-col">SOURCE</div>
+          <div class="list-header-col">ENDPOINT</div>
+          <div class="list-header-col">ACTION</div>
+        </div>
+        <div id="recent-content">
+          <div class="list-row">
+            <div class="list-col">LOADING...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Attackers Section -->
+      <div id="attackers" class="content-section">
+        <div class="box-title">TOP ATTACK SOURCES</div>
+        <div class="menu-section" id="attackers-content">
+          <div class="input-line">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Statistics Section -->
+      <div id="stats" class="content-section">
+        <div class="box-title">DETAILED STATISTICS</div>
+        <div class="menu-section" id="stats-content">
+          <div class="input-line">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Response Area -->
+      <div class="response-area">
+        <div class="input-line"><span class="prompt">=></span> MONITORING ACTIVE - REAL-TIME THREAT DETECTION ENABLED</div>
+      </div>
+    </div>
+
+    <!-- Status Line (Bottom) -->
+    <div class="status-line">
+      <div class="status-left">
+        <span class="status-key"><span class="key">F1</span><span class="desc">Help</span></span>
+        <span class="status-key"><span class="key">F3</span><span class="desc">Exit</span></span>
+      </div>
+      <div class="status-center">
+        SHIELD MONITORING SYSTEM - Press F1 for Help
+      </div>
+      <div class="status-right" id="time-display">00:00:00</div>
+    </div>
+  </div>
+
+  <script>
+    function selectOption(el, section) {
+      document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active'));
+      document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(section).classList.add('active');
+    }
+
+    function padZero(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/attacks');
+        const statsRes = await fetch('/api/stats');
+        const data = await res.json();
+        const stats = await statsRes.json();
+
+        // Update metrics
+        document.getElementById('total').textContent = padZero(data.attacks.length, 4);
+        document.getElementById('critical').textContent = padZero(data.attacks.filter(a => a.severity === 'CRITICAL').length);
+        document.getElementById('ratelimit').textContent = padZero(stats.rateLimit || 0);
+        document.getElementById('sql').textContent = padZero(data.attacks.filter(a => a.type === 'SQL Injection').length);
+        document.getElementById('rce').textContent = padZero(data.attacks.filter(a => a.type === 'RCE').length);
+        document.getElementById('xss').textContent = padZero(data.attacks.filter(a => a.type === 'XSS').length);
+        document.getElementById('other').textContent = padZero(data.attacks.filter(a =>
+          !['SQL Injection', 'RCE', 'XSS'].includes(a.type)
+        ).length);
+
+        // Recent attacks
+        const recentContent = document.getElementById('recent-content');
+        recentContent.innerHTML = data.attacks
+          .slice(-20)
+          .reverse()
+          .map(a => {
+            const severity = (a.severity || 'MEDIUM').toUpperCase();
+            const severityClass = 'severity-' + severity.toLowerCase();
+            return \`
+              <div class="list-row">
+                <div class="list-col">\${new Date(a.timestamp).toLocaleTimeString()}</div>
+                <div class="list-col \${severityClass}">\${severity}</div>
+                <div class="list-col">\${a.type}</div>
+                <div class="list-col">\${a.ip}</div>
+                <div class="list-col">\${a.endpoint}</div>
+                <div class="list-col">BLOCKED</div>
+              </div>
+            \`;
+          })
+          .join('');
+
+        // Top attackers
+        const attackersContent = document.getElementById('attackers-content');
+        attackersContent.innerHTML = \`
+          <div class="box-title">ATTACK SOURCE RANKING</div>
+          \${stats.topAttackers
+            .map((att, idx) => \`
+              <div class="field-row">
+                <div class="field-label">RANK \${padZero(idx + 1)}:</div>
+                <div class="field-value critical">\${att.ip}</div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">  COUNT:</div>
+                <div class="field-value warning">\${att.count} ATTACKS</div>
+              </div>
+            \`)
+            .join('')}
+        \`;
+
+        // Stats
+        const statsContent = document.getElementById('stats-content');
+        const byType = Object.entries(stats.byType || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, count]) => \`
+            <div class="field-row">
+              <div class="field-label">\${type}:</div>
+              <div class="field-value">\${padZero(count, 3)}</div>
+            </div>
+          \`)
+          .join('');
+
+        statsContent.innerHTML = \`
+          <div class="field-row">
+            <div class="field-label">LAST 24 HOURS:</div>
+            <div class="field-value">\${padZero(stats.last24h, 4)}</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">RATE LIMIT EVENTS:</div>
+            <div class="field-value critical">\${padZero(stats.rateLimit, 3)}</div>
+          </div>
+          <div class="separator"></div>
+          <div class="box-title">ATTACK TYPE DISTRIBUTION</div>
+          \${byType}
+        \`;
+      } catch (err) {
+        console.error('Error:', err);
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('time-display').textContent =
+        padZero(now.getHours()) + ':' +
+        padZero(now.getMinutes()) + ':' +
+        padZero(now.getSeconds());
+    }
+
+    loadData();
+    setInterval(loadData, 2000);
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        alert('NODE SHIELD HELP\n\n1 = Recent Attacks\n2 = Top Attackers\n3 = Statistics\n4 = Refresh\n\nF1 = Help\nF3 = Exit');
+      }
+      if (e.key === 'F3') {
+        e.preventDefault();
+        location.reload();
+      }
+    });
+  </script>
+</body>
+</html>

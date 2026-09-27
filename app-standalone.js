@@ -1,0 +1,348 @@
+const http = require('http');
+const url = require('url');
+const fs = require('fs');
+const path = require('path');
+const NodeShield = require('./shield');
+
+const shield = new NodeShield();
+const mockDatabase = {
+  users: [
+    { id: 1, username: 'admin', password: 'secret123' },
+    { id: 2, username: 'user', password: 'pass456' }
+  ]
+};
+
+let dashboardHTML = null;
+
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0] ||
+         req.headers['x-real-ip'] ||
+         req.socket.remoteAddress ||
+         '0.0.0.0';
+}
+
+const server = http.createServer((req, res) => {
+  try {
+    const parsedUrl = url.parse(req.url, true);
+    const pathname = parsedUrl.pathname;
+    const query = parsedUrl.query;
+    const clientIP = getClientIP(req);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // Check for attacks
+    if (query.q && shield.detectSQLInjection(query.q)) {
+      shield.logAttack('SQL Injection', pathname, query.q, { param: 'q' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'SQL injection detected and blocked' }));
+      return;
+    }
+
+  if (query.cmd && shield.detectRCE(query.cmd)) {
+    shield.logAttack('RCE', pathname, query.cmd, { param: 'cmd' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'RCE attempt detected and blocked' }));
+    return;
+  }
+
+  if (query.file && shield.detectPathTraversal(query.file)) {
+    shield.logAttack('Path Traversal', pathname, query.file, { param: 'file' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Path traversal detected and blocked' }));
+    return;
+  }
+
+  if (query.input && shield.detectXSS(query.input)) {
+    shield.logAttack('XSS', pathname, query.input, { param: 'input' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'XSS attempt detected and blocked' }));
+    return;
+  }
+
+  if (query.shell && shield.detectCommandInjection(query.shell)) {
+    shield.logAttack('Command Injection', pathname, query.shell, { param: 'shell' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Command injection detected and blocked' }));
+    return;
+  }
+
+  if (query.nosql && shield.detectNoSQLInjection(query.nosql)) {
+    shield.logAttack('NoSQL Injection', pathname, query.nosql, { param: 'nosql' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'NoSQL injection detected and blocked' }));
+    return;
+  }
+
+  if (query.xml && shield.detectXXE(query.xml)) {
+    shield.logAttack('XXE', pathname, query.xml, { param: 'xml' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'XXE attack detected and blocked' }));
+    return;
+  }
+
+  if (query.ldap && shield.detectLDAPInjection(query.ldap)) {
+    shield.logAttack('LDAP Injection', pathname, query.ldap, { param: 'ldap' }, clientIP);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'LDAP injection detected and blocked' }));
+    return;
+  }
+
+  // Route handlers
+  if (pathname === '/' || pathname === '/dashboard') {
+    res.setHeader('Content-Type', 'text/html');
+
+    // Load dashboard HTML if not cached
+    if (!dashboardHTML) {
+      try {
+        dashboardHTML = fs.readFileSync(path.join(__dirname, 'dashboard-as400pro.html'), 'utf8');
+      } catch (err) {
+        console.error('[DASHBOARD ERROR]', err.message);
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Dashboard not found' }));
+        return;
+      }
+    }
+
+    res.writeHead(200);
+    res.end(dashboardHTML);
+  } else if (pathname === '/api/attacks') {
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 100;
+
+    Promise.all([
+      shield.getAttacks(page, limit),
+      shield.getTotalAttacks()
+    ]).then(([attacks, total]) => {
+      // Add attack number based on total count (latest = highest number)
+      const startNum = total - (page - 1) * limit;
+      const attacksWithNumbers = attacks.map((attack, idx) => ({
+        ...attack,
+        num: startNum - idx
+      }));
+
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        attacks: attacksWithNumbers,
+        total: total,
+        page: page,
+        limit: limit,
+        pages: Math.ceil(total / limit)
+      }));
+    }).catch(err => {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database error' }));
+    });
+  } else if (pathname === '/api/stats') {
+    shield.getStats().then(stats => {
+      res.writeHead(200);
+      res.end(JSON.stringify(stats));
+    }).catch(err => {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database error' }));
+    });
+  } else if (pathname === '/api/count') {
+    shield.getTotalAttacks().then(total => {
+      res.writeHead(200);
+      res.end(JSON.stringify({ total }));
+    }).catch(err => {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database error' }));
+    });
+  } else if (pathname === '/api/health') {
+    const healthScore = shield.calculateHealthScore();
+    const threatLevel = shield.calculateThreatLevel();
+    res.writeHead(200);
+    res.end(JSON.stringify({ healthScore, threatLevel }));
+  } else if (pathname === '/api/top-attackers') {
+    if (shield.useInMemoryDB) {
+      const ipCounts = {};
+      shield.inMemoryAttacks.forEach(attack => {
+        ipCounts[attack.ip] = (ipCounts[attack.ip] || 0) + 1;
+      });
+      const topAttackers = Object.entries(ipCounts)
+        .map(([ip, count]) => ({ ip, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      res.writeHead(200);
+      res.end(JSON.stringify({ topAttackers }));
+    } else if (shield.pool) {
+      shield.pool.query(
+        `SELECT ip, COUNT(*) as count FROM attacks GROUP BY ip ORDER BY count DESC LIMIT 5`
+      ).then(result => {
+        const topAttackers = result.rows.map(row => ({
+          ip: row.ip,
+          count: parseInt(row.count)
+        }));
+        res.writeHead(200);
+        res.end(JSON.stringify({ topAttackers }));
+      }).catch(err => {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Database error' }));
+      });
+    } else {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database not available' }));
+    }
+  } else if (pathname === '/api/statistics') {
+    if (shield.useInMemoryDB) {
+      const byType = {};
+      shield.inMemoryAttacks.forEach(attack => {
+        byType[attack.type] = (byType[attack.type] || 0) + 1;
+      });
+      res.writeHead(200);
+      res.end(JSON.stringify({ byType }));
+    } else if (shield.pool) {
+      shield.pool.query(
+        `SELECT type, COUNT(*) as count FROM attacks GROUP BY type ORDER BY count DESC`
+      ).then(result => {
+        const byType = {};
+        result.rows.forEach(row => {
+          byType[row.type] = parseInt(row.count);
+        });
+        res.writeHead(200);
+        res.end(JSON.stringify({ byType }));
+      }).catch(err => {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Database error' }));
+      });
+    } else {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database not available' }));
+    }
+  } else if (pathname === '/api/severity-stats') {
+    if (shield.useInMemoryDB) {
+      const bySeverity = {};
+      shield.inMemoryAttacks.forEach(attack => {
+        bySeverity[attack.severity] = (bySeverity[attack.severity] || 0) + 1;
+      });
+      res.writeHead(200);
+      res.end(JSON.stringify({ bySeverity }));
+    } else if (shield.pool) {
+      shield.pool.query(
+        `SELECT severity, COUNT(*) as count FROM attacks GROUP BY severity ORDER BY count DESC`
+      ).then(result => {
+        const bySeverity = {};
+        result.rows.forEach(row => {
+          bySeverity[row.severity] = parseInt(row.count);
+        });
+        res.writeHead(200);
+        res.end(JSON.stringify({ bySeverity }));
+      }).catch(err => {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Database error' }));
+      });
+    } else {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database not available' }));
+    }
+  } else if (pathname === '/api/timeline-data') {
+    if (shield.useInMemoryDB) {
+      const now = Date.now();
+      const oneDayAgo = now - 24 * 60 * 60 * 1000;
+      const timeline = {};
+
+      shield.inMemoryAttacks.forEach(attack => {
+        const attackTime = new Date(attack.timestamp).getTime();
+        if (attackTime >= oneDayAgo) {
+          const bucket = new Date(attackTime);
+          bucket.setSeconds(0, 0);
+          const key = bucket.toISOString();
+          timeline[key] = (timeline[key] || 0) + 1;
+        }
+      });
+
+      const result = Object.entries(timeline)
+        .map(([timestamp, count]) => ({ timestamp, count }))
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      res.writeHead(200);
+      res.end(JSON.stringify({ timeline: result }));
+    } else if (shield.pool) {
+      shield.pool.query(
+        `SELECT
+          DATE_TRUNC('minute', timestamp) as time_bucket,
+          COUNT(*) as count
+        FROM attacks
+        WHERE timestamp > NOW() - INTERVAL '24 hours'
+        GROUP BY DATE_TRUNC('minute', timestamp)
+        ORDER BY time_bucket ASC`
+      ).then(result => {
+        const timeline = result.rows.map(row => ({
+          timestamp: row.time_bucket,
+          count: parseInt(row.count)
+        }));
+        res.writeHead(200);
+        res.end(JSON.stringify({ timeline }));
+      }).catch(err => {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Database error' }));
+      });
+    } else {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database not available' }));
+    }
+  } else if (pathname === '/api/timeline') {
+    const interval = query.interval || 'minute';
+    const intervalMs = interval === 'hour' ? 3600000 : 60000;
+
+    shield.pool.query(
+      `SELECT
+        DATE_TRUNC('${interval}', timestamp) as time_bucket,
+        COUNT(*) as count
+      FROM attacks
+      WHERE timestamp > NOW() - INTERVAL '1 hour'
+      GROUP BY DATE_TRUNC('${interval}', timestamp)
+      ORDER BY time_bucket ASC`
+    ).then(result => {
+      const timeline = result.rows.map(row => ({
+        timestamp: row.time_bucket,
+        count: parseInt(row.count)
+      }));
+      res.writeHead(200);
+      res.end(JSON.stringify({ timeline }));
+    }).catch(err => {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Database error' }));
+    });
+  } else if (pathname === '/api/reset' && req.method === 'POST') {
+    shield.logs = [];
+    shield.saveLogs();
+    res.writeHead(200);
+    res.end(JSON.stringify({ message: 'Attacks log reset' }));
+  } else if (pathname === '/search') {
+    const q = query.q || '';
+    const results = mockDatabase.users.filter(u => u.username.includes(q));
+    res.writeHead(200);
+    res.end(JSON.stringify({ results, query: q }));
+  } else if (pathname === '/execute') {
+    res.writeHead(200);
+    res.end(JSON.stringify({ error: 'This is a demo endpoint. Command execution is disabled.' }));
+  } else if (pathname === '/file') {
+    res.writeHead(200);
+    res.end(JSON.stringify({ error: 'File access is disabled for security reasons.' }));
+  } else {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: 'Not found' }));
+  }
+  } catch (err) {
+    console.error('[ERROR]', err.message);
+    if (!res.headersSent) {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  }
+});
+
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`🛡️  Node Shield is running on http://localhost:${PORT}`);
+  console.log(`📊 Dashboard: http://localhost:${PORT}`);
+  console.log('');
+  console.log('Try these attack scenarios:');
+  console.log(`  SQL Injection: curl "http://localhost:${PORT}/search?q=admin' UNION SELECT 1,2,3--"`);
+  console.log(`  RCE: curl "http://localhost:${PORT}/execute?cmd=require('child_process').exec('ls')"`);
+  console.log(`  Path Traversal: curl "http://localhost:${PORT}/file?file=../../etc/passwd"`);
+  console.log('');
+  console.log('Press Ctrl+C to stop');
+});

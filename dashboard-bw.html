@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node Shield Security Monitor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #000000;
+      font-family: 'MS Sans Serif', 'Segoe UI', Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 8px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      box-shadow: inset 1px 1px 0 #ffffff;
+    }
+
+    /* Title Bar */
+    .title-bar {
+      background: linear-gradient(90deg, #000080, #1084d7);
+      color: #ffffff;
+      padding: 2px 4px;
+      font-weight: bold;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 20px;
+    }
+
+    .title-bar-close {
+      width: 16px;
+      height: 14px;
+      background: linear-gradient(135deg, #dfdfdf, #808080);
+      border: 1px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #000;
+    }
+
+    /* Menu Bar */
+    .menu-bar {
+      background: #c0c0c0;
+      border-bottom: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      padding: 2px;
+      display: flex;
+      gap: 2px;
+    }
+
+    .menu-item {
+      padding: 2px 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    .menu-item:hover {
+      background: #000080;
+      color: #ffffff;
+    }
+
+    /* Content Area */
+    .content {
+      padding: 12px;
+      background: #c0c0c0;
+      min-height: 600px;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Left Panel */
+    .left-panel {
+      flex: 1;
+      background: #ffffff;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      padding: 8px;
+      box-shadow: inset 1px 1px 0 #ffffff;
+    }
+
+    .panel-title {
+      background: #000080;
+      color: #ffffff;
+      padding: 2px 4px;
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 8px;
+      border: 1px solid #000080;
+    }
+
+    /* Fields */
+    .field-group {
+      margin-bottom: 12px;
+      background: #ffffff;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 40% 60%;
+      gap: 8px;
+      margin: 4px 0;
+      padding: 2px 0;
+      border-bottom: 1px dotted #c0c0c0;
+    }
+
+    .field-label {
+      font-weight: bold;
+      text-align: right;
+      padding-right: 4px;
+      color: #000000;
+    }
+
+    .field-value {
+      font-family: 'Courier New', monospace;
+      color: #000000;
+      padding-left: 4px;
+    }
+
+    .field-value.critical {
+      font-weight: bold;
+      color: #000000;
+    }
+
+    /* Data Grid */
+    .grid-section {
+      background: #ffffff;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      margin-top: 12px;
+      padding: 0;
+      box-shadow: inset 1px 1px 0 #ffffff;
+    }
+
+    .grid-title {
+      background: #000080;
+      color: #ffffff;
+      padding: 2px 4px;
+      font-weight: bold;
+      font-size: 11px;
+      border-bottom: 1px solid #000080;
+    }
+
+    .grid-header {
+      background: #c0c0c0;
+      border-bottom: 1px solid #000000;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: 12% 15% 12% 20% 20% 12%;
+      gap: 4px;
+      font-weight: bold;
+      font-size: 10px;
+    }
+
+    .grid-row {
+      display: grid;
+      grid-template-columns: 12% 15% 12% 20% 20% 12%;
+      gap: 4px;
+      padding: 4px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 10px;
+    }
+
+    .grid-row:hover {
+      background: #e0e0e0;
+    }
+
+    .grid-cell {
+      padding: 2px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .grid-cell.critical {
+      font-weight: bold;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      background: #c0c0c0;
+      border-top: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      padding: 2px 4px;
+      display: flex;
+      justify-content: space-between;
+      height: 22px;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .status-text {
+      flex: 1;
+    }
+
+    .status-time {
+      font-weight: bold;
+      width: 80px;
+      text-align: right;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-top: 8px;
+    }
+
+    .tab {
+      background: linear-gradient(135deg, #dfdfdf, #808080);
+      color: #000000;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      padding: 3px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 11px;
+      box-shadow: 1px 1px 0 #ffffff inset;
+    }
+
+    .tab:hover {
+      background: linear-gradient(135deg, #e8e8e8, #909090);
+    }
+
+    .tab.active {
+      border-color: #ffffff #000000 #000000 #ffffff;
+      box-shadow: -1px -1px 0 #ffffff inset;
+      background: linear-gradient(135deg, #dfdfdf, #a0a0a0);
+    }
+
+    .tab-content {
+      display: none;
+      background: #ffffff;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      border-top: none;
+      padding: 8px;
+      box-shadow: inset 1px 1px 0 #ffffff;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #dfdfdf, #808080);
+      color: #000000;
+      border: 2px solid;
+      border-color: #dfdfdf #808080 #808080 #dfdfdf;
+      padding: 4px 12px;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      box-shadow: 1px 1px 0 #ffffff inset;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #e8e8e8, #909090);
+    }
+
+    .btn:active {
+      border-color: #808080 #dfdfdf #dfdfdf #808080;
+      box-shadow: -1px -1px 0 #ffffff inset;
+    }
+
+    /* Separator */
+    .separator {
+      border-top: 1px solid #808080;
+      border-bottom: 1px solid #dfdfdf;
+      margin: 8px 0;
+    }
+
+    /* Statistics list */
+    .stat-list {
+      background: #ffffff;
+    }
+
+    .stat-item {
+      display: grid;
+      grid-template-columns: 50% 50%;
+      gap: 8px;
+      padding: 4px;
+      border-bottom: 1px dotted #c0c0c0;
+    }
+
+    .stat-label {
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .stat-value {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+
+    /* Attacker list */
+    .attacker-item {
+      display: grid;
+      grid-template-columns: 60% 40%;
+      gap: 8px;
+      padding: 6px 4px;
+      border-bottom: 1px solid #c0c0c0;
+      background: #ffffff;
+    }
+
+    .attacker-ip {
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+
+    .attacker-count {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    @media (max-width: 1200px) {
+      .grid-header, .grid-row {
+        grid-template-columns: 15% 15% 15% 20% 20% 15%;
+        font-size: 9px;
+      }
+
+      body {
+        font-size: 10px;
+      }
+    }
+
+    /* Loading state */
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <!-- Window Frame -->
+  <div class="container">
+    <!-- Title Bar -->
+    <div class="title-bar">
+      <span>🛡️ Node Shield Security Monitor</span>
+      <div class="title-bar-close" onclick="location.reload()">×</div>
+    </div>
+
+    <!-- Menu Bar -->
+    <div class="menu-bar">
+      <div class="menu-item" onclick="selectTab('monitor')">Monitor</div>
+      <div class="menu-item" onclick="selectTab('attacks')">Attacks</div>
+      <div class="menu-item" onclick="selectTab('threats')">Threats</div>
+      <div class="menu-item" onclick="location.reload()">Refresh</div>
+      <div class="menu-item" onclick="alert('Node Shield v0.2.0\n\nSecurity Monitoring System')">Help</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Main Panel -->
+      <div class="left-panel">
+        <div class="panel-title">SECURITY STATUS</div>
+
+        <div class="field-group">
+          <div class="field-row">
+            <div class="field-label">System Name:</div>
+            <div class="field-value">NODE-SHIELD-01</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Status:</div>
+            <div class="field-value">OPERATIONAL</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Mode:</div>
+            <div class="field-value">ACTIVE MONITORING</div>
+          </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="panel-title">METRICS</div>
+
+        <div class="field-group">
+          <div class="field-row">
+            <div class="field-label">Total Blocked:</div>
+            <div class="field-value critical" id="total">0000</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Critical:</div>
+            <div class="field-value critical" id="critical">00</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Rate Limits:</div>
+            <div class="field-value" id="ratelimit">00</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">SQL Inject:</div>
+            <div class="field-value" id="sql">00</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">RCE:</div>
+            <div class="field-value critical" id="rce">00</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">XSS:</div>
+            <div class="field-value" id="xss">00</div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Other:</div>
+            <div class="field-value" id="other">00</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this, 'recent')">Recent Attacks</div>
+          <div class="tab" onclick="switchTab(this, 'attackers')">Attackers</div>
+          <div class="tab" onclick="switchTab(this, 'stats')">Statistics</div>
+        </div>
+
+        <!-- Recent Attacks Tab -->
+        <div id="recent" class="tab-content active">
+          <div class="grid-section">
+            <div class="grid-title">ATTACK LOG</div>
+            <div class="grid-header">
+              <div>TIME</div>
+              <div>SEVERITY</div>
+              <div>TYPE</div>
+              <div>SOURCE</div>
+              <div>ENDPOINT</div>
+              <div>ACTION</div>
+            </div>
+            <div id="recent-content" class="grid-body">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attackers Tab -->
+        <div id="attackers" class="tab-content">
+          <div class="grid-section">
+            <div class="grid-title">TOP ATTACK SOURCES</div>
+            <div id="attackers-content" class="stat-list">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="stats" class="tab-content">
+          <div class="grid-section">
+            <div class="grid-title">DETAILED STATISTICS</div>
+            <div id="stats-content" class="stat-list">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+          <button class="btn" onclick="location.reload()">Refresh</button>
+          <button class="btn" onclick="alert('Node Shield\nReal-time Security Monitoring\nv0.2.0')">About</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-text">Ready - Node Shield Monitoring Active</div>
+      <div class="status-time" id="status-time">00:00:00</div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(el, tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(tab).classList.add('active');
+    }
+
+    function selectTab(tab) {
+      // For menu items
+      if (tab === 'monitor') switchTab(document.querySelectorAll('.tab')[0], 'recent');
+      if (tab === 'attacks') switchTab(document.querySelectorAll('.tab')[0], 'recent');
+      if (tab === 'threats') switchTab(document.querySelectorAll('.tab')[1], 'attackers');
+    }
+
+    function padZero(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/attacks');
+        const statsRes = await fetch('/api/stats');
+        const data = await res.json();
+        const stats = await statsRes.json();
+
+        // Update metrics
+        document.getElementById('total').textContent = padZero(data.attacks.length, 4);
+        document.getElementById('critical').textContent = padZero(data.attacks.filter(a => a.severity === 'CRITICAL').length);
+        document.getElementById('ratelimit').textContent = padZero(stats.rateLimit || 0);
+        document.getElementById('sql').textContent = padZero(data.attacks.filter(a => a.type === 'SQL Injection').length);
+        document.getElementById('rce').textContent = padZero(data.attacks.filter(a => a.type === 'RCE').length);
+        document.getElementById('xss').textContent = padZero(data.attacks.filter(a => a.type === 'XSS').length);
+        document.getElementById('other').textContent = padZero(data.attacks.filter(a =>
+          !['SQL Injection', 'RCE', 'XSS'].includes(a.type)
+        ).length);
+
+        // Recent attacks
+        const recentContent = document.getElementById('recent-content');
+        recentContent.innerHTML = data.attacks
+          .slice(-15)
+          .reverse()
+          .map(a => {
+            const severity = (a.severity || 'MEDIUM').substring(0, 4);
+            return \`
+              <div class="grid-row">
+                <div class="grid-cell">\${new Date(a.timestamp).toLocaleTimeString().substring(0, 8)}</div>
+                <div class="grid-cell critical">\${severity}</div>
+                <div class="grid-cell">\${a.type.substring(0, 12)}</div>
+                <div class="grid-cell">\${a.ip}</div>
+                <div class="grid-cell">\${a.endpoint}</div>
+                <div class="grid-cell">BLOCKED</div>
+              </div>
+            \`;
+          })
+          .join('');
+
+        // Top attackers
+        const attackersContent = document.getElementById('attackers-content');
+        attackersContent.innerHTML = stats.topAttackers
+          .map(att => \`
+            <div class="attacker-item">
+              <div class="attacker-ip">\${att.ip}</div>
+              <div class="attacker-count">\${att.count} ATTACKS</div>
+            </div>
+          \`)
+          .join('');
+
+        // Stats
+        const statsContent = document.getElementById('stats-content');
+        const byType = Object.entries(stats.byType || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, count]) => \`
+            <div class="stat-item">
+              <div class="stat-label">\${type}</div>
+              <div class="stat-value">\${padZero(count, 3)}</div>
+            </div>
+          \`)
+          .join('');
+
+        statsContent.innerHTML = \`
+          <div class="stat-item">
+            <div class="stat-label">Last 24 Hours</div>
+            <div class="stat-value">\${padZero(stats.last24h, 4)}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Rate Limit Events</div>
+            <div class="stat-value">\${padZero(stats.rateLimit, 3)}</div>
+          </div>
+          <div style="border-top: 1px solid #c0c0c0; margin: 8px 0;"></div>
+          \${byType}
+        \`;
+      } catch (err) {
+        console.error('Error:', err);
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('status-time').textContent =
+        padZero(now.getHours()) + ':' +
+        padZero(now.getMinutes()) + ':' +
+        padZero(now.getSeconds());
+    }
+
+    loadData();
+    setInterval(loadData, 2000);
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>

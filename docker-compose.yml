@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: node-shield-db
+    environment:
+      POSTGRES_DB: node_shield
+      POSTGRES_USER: shield_user
+      POSTGRES_PASSWORD: shield_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shield_user -d node_shield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  node-shield:
+    build: .
+    container_name: node-shield-app
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: node_shield
+      DB_USER: shield_user
+      DB_PASSWORD: shield_password
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

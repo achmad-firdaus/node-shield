@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NODE SHIELD SECURITY MONITOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a1428 0%, #1a1f3a 100%);
+      color: #00d4ff;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(90deg, #0d2b45 0%, #1a4d7a 100%);
+      border: 2px solid #00d4ff;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: #00ff88;
+      text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .header-line {
+      margin: 0;
+      letter-spacing: 1px;
+      font-size: 16px;
+    }
+
+    .header-sub {
+      font-size: 13px;
+      color: #00d4ff;
+      margin-top: 3px;
+      opacity: 0.8;
+    }
+
+    /* Main Container */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr auto;
+      gap: 4px;
+      flex: 1;
+      min-height: 0;
+      padding: 4px;
+    }
+
+    .left-panel {
+      grid-column: 1;
+      grid-row: 1;
+      height: 100%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .middle-panel {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .right-panel {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+      min-height: 160px;
+      max-height: 240px;
+      flex-shrink: 0;
+    }
+
+    /* Panels */
+    .panel {
+      background: linear-gradient(180deg, #0f1f35 0%, #1a2a4a 100%);
+      border: 2px solid #00d4ff;
+      padding: 10px;
+      overflow: visible;
+      box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel > .table-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+
+    .panel-title {
+      background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
+      color: #0a1428;
+      padding: 8px 10px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 0;
+      border-radius: 2px;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    /* Sections */
+    .section {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #00d4ff;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #00ff88;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Field Row */
+    .field-row {
+      display: grid;
+      grid-template-columns: 50% 50%;
+      gap: 6px;
+      margin: 5px 0;
+      font-size: 13px;
+    }
+
+    .field-label {
+      text-align: right;
+      color: #00d4ff;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .field-value {
+      font-weight: 700;
+      color: #00ff88;
+      font-size: 13px;
+    }
+
+    .field-value.critical {
+      color: #ff6b6b;
+    }
+
+    .field-value.warning {
+      color: #ffd93d;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .metric-card {
+      background: linear-gradient(135deg, #1a3a5a 0%, #0f2a45 100%);
+      border: 1px solid #00ff88;
+      padding: 6px;
+      text-align: center;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    }
+
+    .metric-number {
+      font-size: 20px;
+      font-weight: 700;
+      color: #00ff88;
+      line-height: 1;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #00d4ff;
+      margin-top: 3px;
+      text-transform: uppercase;
+    }
+
+    /* Table */
+    .table-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border: 1px solid #00d4ff;
+      border-radius: 2px;
+      box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.1);
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .table-header {
+      background: linear-gradient(90deg, #1a4d7a 0%, #0d2b45 100%);
+      border-bottom: 1px solid #00ff88;
+      padding: 6px 2px;
+      display: grid;
+      grid-template-columns: 6% 10% 9% 28% 17% 30%;
+      gap: 1px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #00ff88;
+      position: sticky;
+      top: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 6% 10% 9% 28% 17% 30%;
+      gap: 1px;
+      padding: 4px 1px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      font-size: 12px;
+      background: transparent;
+      min-height: 20px;
+      transition: background-color 0.3s ease, opacity 0.3s ease;
+      opacity: 1;
+    }
+
+    .table-row.fade-in {
+      animation: fadeInRow 0.5s ease;
+    }
+
+    @keyframes fadeInRow {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    #attacks-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      transition: opacity 0.4s ease;
+    }
+
+    #attacks-content.updating {
+      opacity: 0.7;
+    }
+
+    .attacks-table-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .pagination-controls {
+      flex-shrink: 0;
+      padding: 8px;
+      background: rgba(0, 212, 255, 0.05);
+      border-top: 1px solid #00d4ff;
+      font-size: 11px;
+      color: #00ff88;
+      text-align: center;
+    }
+
+    .table-row:nth-child(even) {
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .table-row {
+      cursor: pointer;
+    }
+
+    .table-row:hover {
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    .table-cell {
+      color: #00d4ff;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      padding: 0 2px;
+    }
+
+    /* Inline Detail Row */
+    .attack-detail-row {
+      grid-column: 1 / -1;
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-left: 3px solid #00ff88;
+      padding: 8px;
+      font-size: 11px;
+      line-height: 1.5;
+      display: none;
+      margin: 2px 0;
+    }
+
+    .attack-detail-row.show {
+      display: block;
+    }
+
+    .detail-line {
+      margin: 4px 0;
+    }
+
+    .detail-label {
+      color: #00ff88;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: inline-block;
+      width: 90px;
+    }
+
+    .detail-value {
+      color: #00d4ff;
+      word-break: break-all;
+      display: inline;
+    }
+
+    .detail-payload {
+      background: rgba(0, 20, 40, 0.8);
+      border-left: 2px solid #ffd93d;
+      padding: 6px;
+      margin-top: 4px;
+      overflow-x: auto;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .table-cell.critical {
+      color: #ff6b6b;
+      font-weight: 700;
+    }
+
+    .table-cell.warning {
+      color: #ffd93d;
+      font-weight: 700;
+    }
+
+    .table-cell.success {
+      color: #00ff88;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      background: linear-gradient(90deg, #0d2b45 0%, #1a4d7a 100%);
+      border: 1px solid #00d4ff;
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #00d4ff;
+      height: 28px;
+      border-radius: 2px;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .status-left {
+      flex: 1;
+    }
+
+    .status-right {
+      text-align: right;
+      color: #00ff88;
+    }
+
+    /* Attacker List */
+    .attacker-line {
+      display: grid;
+      grid-template-columns: 70% 30%;
+      gap: 6px;
+      padding: 6px 6px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      transition: background-color 0.3s ease;
+    }
+
+    .attacker-line:nth-child(even) {
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .attacker-line:hover {
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    .attacker-ip {
+      font-weight: 700;
+      color: #00ff88;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .attacker-count {
+      text-align: right;
+      font-weight: 700;
+      color: #ffd93d;
+      font-size: 12px;
+    }
+
+    /* Stat Item */
+    .stat-item {
+      display: grid;
+      grid-template-columns: 60% 40%;
+      gap: 6px;
+      padding: 6px 6px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      transition: background-color 0.3s ease;
+    }
+
+    .stat-item:nth-child(even) {
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .stat-item:hover {
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    #breakdown-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .stat-label {
+      color: #00d4ff;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .stat-value {
+      text-align: right;
+      color: #00ff88;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #00d4ff;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00ff88;
+    }
+
+    @media (max-width: 1200px) {
+      .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+
+      .left-panel {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .middle-panel {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .right-panel {
+        grid-column: 1;
+        grid-row: 3;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .right-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .table-row {
+        grid-template-columns: 6% 10% 9% 28% 17% 30%;
+      }
+
+      .table-header {
+        grid-template-columns: 6% 10% 9% 28% 17% 30%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-line">⚔️ NODE SHIELD SECURITY MONITOR</div>
+      <div class="header-sub">Real-time Threat Detection & Attack Prevention System</div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="container">
+      <!-- LEFT: Status & Metrics -->
+      <div class="panel left-panel">
+        <div class="panel-title">SYSTEM STATUS</div>
+
+        <!-- Status Indicator -->
+        <div style="padding: 6px 8px; border-bottom: 1px solid rgba(0,212,255,0.3); background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.04) 100%); display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="color: #00ff88; font-size: 12px; animation: pulse 2s infinite;">●</span>
+            <span style="color: #00d4ff;">SYSTEM:</span>
+            <span style="color: #00ff88; font-weight: 700;" id="system-status">PROTECTED</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #00d4ff;">
+            <span>UPDATED:</span>
+            <span id="last-update" style="color: #00ff88; font-weight: 700; font-family: 'IBM Plex Mono', monospace;">--:--</span>
+          </div>
+        </div>
+
+        <!-- Quick Metrics -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 6px; background: rgba(0,212,255,0.04); border-bottom: 1px solid rgba(0,212,255,0.15);">
+          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
+            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">RESPONSE</div>
+            <div id="metric-response" style="font-size: 11px; font-weight: 900; color: #00ff88;">--ms</div>
+          </div>
+          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
+            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">DETECT</div>
+            <div id="metric-detection" style="font-size: 11px; font-weight: 900; color: #ffd93d;">--%</div>
+          </div>
+          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
+            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">UPTIME</div>
+            <div id="metric-uptime" style="font-size: 11px; font-weight: 900; color: #00ff88;">--h</div>
+          </div>
+        </div>
+
+        <!-- Threat Level -->
+        <div style="padding: 6px 8px; background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.05) 100%); border-bottom: 1px solid rgba(0,212,255,0.3); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="font-size: 10px; color: #00d4ff; font-weight: 700; letter-spacing: 0.3px;">THREAT</span>
+          <span id="threat-level" style="color: #00ff88; padding: 2px 8px; background: rgba(0,255,136,0.25); border: 1px solid #00ff88; border-radius: 2px; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,255,136,0.3);">LOW</span>
+        </div>
+
+        <!-- Health Score -->
+        <div style="padding: 6px 8px; background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.05) 100%); border-bottom: 1px solid rgba(0,212,255,0.3);">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #00d4ff; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 4px;">
+            <span>HEALTH</span>
+            <span id="health-score" style="color: #00ff88; font-weight: 900; font-size: 11px;">100%</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 2px; height: 14px; background: rgba(0,20,40,0.6); border: 1px solid rgba(0,212,255,0.3); border-radius: 1px; overflow: hidden; padding: 1px;">
+            <div id="health-bar" style="height: 12px; background: linear-gradient(90deg, #00ff88 0%, #00ff88 100%); border-radius: 1px; width: 100%; transition: width 0.3s ease, background 0.3s ease; box-shadow: 0 0 8px rgba(0,255,136,0.3);"></div>
+          </div>
+        </div>
+
+        <!-- Key Metrics Grid - Improved spacing & visual hierarchy -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; border-bottom: 1px solid rgba(0,212,255,0.3); background: rgba(15,31,53,0.5); flex: 1; overflow-y: auto;">
+          <!-- Metric 1: Total -->
+          <div style="background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,212,255,0.05) 100%); border: 1px solid #00d4ff; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">TOTAL</div>
+            <div id="total-detail" style="font-size: 18px; font-weight: 900; color: #00ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
+          </div>
+          <!-- Metric 2: Critical -->
+          <div style="background: linear-gradient(135deg, rgba(255,107,107,0.12) 0%, rgba(255,107,107,0.05) 100%); border: 1px solid #ff6b6b; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 9px; color: #ff6b6b; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">CRITICAL</div>
+            <div id="ratelimit" style="font-size: 18px; font-weight: 900; color: #ff6b6b; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
+          </div>
+          <!-- Metric 3: RCE -->
+          <div style="background: linear-gradient(135deg, rgba(255,211,61,0.12) 0%, rgba(255,211,61,0.05) 100%); border: 1px solid #ffd93d; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 9px; color: #ffd93d; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">RCE</div>
+            <div id="rce" style="font-size: 16px; font-weight: 900; color: #ffd93d; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
+          </div>
+          <!-- Metric 4: SQL -->
+          <div style="background: linear-gradient(135deg, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0.05) 100%); border: 1px solid #00ff88; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 9px; color: #00ff88; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">SQL</div>
+            <div id="sql" style="font-size: 16px; font-weight: 900; color: #00ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MIDDLE: Attack Log -->
+      <div class="panel middle-panel">
+        <div class="panel-title" style="border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ATTACK TIMELINE (LAST HOUR)
+          <span id="timeline-warning" style="display: none; margin-left: 8px; font-size: 11px; color: #ff6b6b; font-weight: 700; animation: pulse 0.8s infinite;">🚨 SPIKE DETECTED</span>
+        </div>
+        <div id="timeline-container" style="height: 130px; margin: 8px 0; padding: 8px; background: rgba(0,20,40,0.5); border: 1px solid #00d4ff; border-radius: 2px; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.1); opacity: 1; transition: opacity 0.3s ease;">
+          <canvas id="timeline-chart"></canvas>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 8px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.2); border-radius: 2px; margin-top: 6px;">
+          <div style="text-align: center; font-size: 10px;">
+            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">CURRENT</div>
+            <div id="timeline-current" style="color: #00ff88; font-size: 13px; font-weight: 900;">0/min</div>
+          </div>
+          <div style="text-align: center; font-size: 10px;">
+            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">AVERAGE</div>
+            <div id="timeline-avg" style="color: #ffd93d; font-size: 13px; font-weight: 900;">0/min</div>
+          </div>
+          <div style="text-align: center; font-size: 10px;">
+            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">PEAK</div>
+            <div id="timeline-peak" style="color: #ff6b6b; font-size: 13px; font-weight: 900;">0/min</div>
+          </div>
+        </div>
+
+        <div class="panel-title">ATTACK LOG (ALL)</div>
+        <div class="table-container">
+          <div class="table-header">
+            <div>#</div>
+            <div>TIME</div>
+            <div>SEVERITY</div>
+            <div>ATTACK TYPE</div>
+            <div>SOURCE IP</div>
+            <div>ENDPOINT</div>
+          </div>
+          <div id="attacks-content"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: 3-Column Horizontal Layout -->
+      <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; max-height: 90px; margin-bottom: 8px;">
+        <!-- TOP ATTACKERS -->
+        <div class="panel" style="padding: 4px; min-height: 0;">
+          <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">TOP ATTACKERS</div>
+          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #00d4ff;">IP</div>
+              <div style="text-align: right; color: #00d4ff;">HITS</div>
+            </div>
+            <div id="attackers-content" style="font-size: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- STATISTICS -->
+        <div class="panel" style="padding: 4px; min-height: 0;">
+          <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">STATISTICS</div>
+          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #00d4ff;">TYPE</div>
+              <div style="text-align: right; color: #00d4ff;">COUNT</div>
+            </div>
+            <div id="stats-content" style="font-size: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- THREAT BREAKDOWN -->
+        <div class="panel" style="padding: 4px; min-height: 0;">
+          <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">THREAT BREAKDOWN</div>
+          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #00d4ff;">TYPE</div>
+              <div style="text-align: right; color: #00d4ff;">COUNT</div>
+            </div>
+            <div id="threat-breakdown-content" style="font-size: 10px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-left">🛡️ NODE SHIELD v0.2.0 | Protection Active | Real-time Monitoring</div>
+      <div class="status-right" id="time-display">00:00:00</div>
+    </div>
+  </div>
+
+  <script>
+    function padZero(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    async function loadData() {
+      try {
+        // Skip refresh if user is actively scrolling (but NOT on first load)
+        if (autoRefreshPaused && !isFirstLoad) {
+          return;
+        }
+        isFirstLoad = false;
+        saveScrollPosition(); // Save scroll before reload
+
+        // Fetch lightweight APIs (each optimized for its panel)
+        const [countRes, statsRes, attackersRes, attacksRes, timelineRes] = await Promise.all([
+          fetch('/api/count'),
+          fetch('/api/statistics'),
+          fetch('/api/top-attackers'),
+          fetch(`/api/attacks?page=${currentPage}&limit=${pageSize}`),
+          fetch('/api/timeline-data')
+        ]);
+
+        const countData = await countRes.json();
+        const statsData = await statsRes.json();
+        const attackersData = await attackersRes.json();
+        const data = await attacksRes.json();
+        const timelineData = await timelineRes.json();
+
+        // SYSTEM STATUS - use lightweight count
+        const total = countData.total || 0;
+        const rce = statsData.byType?.RCE || 0;
+        const sql = statsData.byType?.['SQL Injection'] || 0;
+        const critical = rce; // CRITICAL = RCE count
+
+        // Update system status elements (if they exist)
+        const updateElement = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = value;
+        };
+        updateElement('rce', rce);
+        updateElement('sql', sql);
+        updateElement('total-detail', padZero(total, 4));
+        updateElement('ratelimit', padZero(critical || 0));
+        updateElement('last-update', new Date().toLocaleTimeString());
+
+        // Threat level calculation
+        let threatLevel = 'LOW';
+        let threatColor = '#00ff88';
+        let threatBgColor = 'rgba(0,255,136,0.2)';
+        let threatBorderColor = '#00ff88';
+
+        if (critical >= 10) {
+          threatLevel = 'CRITICAL';
+          threatColor = '#ff6b6b';
+          threatBgColor = 'rgba(255,107,107,0.2)';
+          threatBorderColor = '#ff6b6b';
+        } else if (critical >= 5) {
+          threatLevel = 'HIGH';
+          threatColor = '#ffd93d';
+          threatBgColor = 'rgba(255,211,61,0.2)';
+          threatBorderColor = '#ffd93d';
+        } else if (critical >= 1) {
+          threatLevel = 'MEDIUM';
+          threatColor = '#00d4ff';
+          threatBgColor = 'rgba(0,212,255,0.2)';
+          threatBorderColor = '#00d4ff';
+        }
+
+        const threatLevelEl = document.getElementById('threat-level');
+        if (threatLevelEl) {
+          threatLevelEl.textContent = threatLevel;
+          threatLevelEl.style.color = threatColor;
+          threatLevelEl.style.background = threatBgColor;
+          threatLevelEl.style.borderColor = threatBorderColor;
+        }
+
+        // Health score calculation (100 - (critical threats * 5))
+        const healthScore = Math.max(0, Math.min(100, 100 - (critical * 3)));
+        updateElement('health-score', healthScore + '%');
+        const healthBar = document.getElementById('health-bar');
+        if (healthBar) {
+          healthBar.style.width = healthScore + '%';
+          if (healthScore >= 80) {
+            healthBar.style.background = 'linear-gradient(90deg, #00ff88, #00ff88)';
+          } else if (healthScore >= 50) {
+            healthBar.style.background = 'linear-gradient(90deg, #ffd93d, #ffd93d)';
+          } else {
+            healthBar.style.background = 'linear-gradient(90deg, #ff6b6b, #ff6b6b)';
+          }
+        }
+
+        // Update system status
+        const systemStatusEl = document.getElementById('system-status');
+        if (systemStatusEl) {
+          systemStatusEl.textContent = healthScore >= 50 ? 'PROTECTED' : 'THREATENED';
+          systemStatusEl.style.color = healthScore >= 50 ? '#00ff88' : '#ff6b6b';
+        }
+
+        // Update quick metrics
+        const startTime = performance.now();
+        await fetch('/api/count').then(r => r.json());
+        const responseTime = Math.round(performance.now() - startTime);
+        document.getElementById('metric-response').textContent = responseTime + 'ms';
+
+        const totalByType = Object.values(statsData.byType || {}).reduce((a, b) => a + b, 0);
+        const detectionRate = totalByType > 0 ? 100 : 0;
+        document.getElementById('metric-detection').textContent = detectionRate + '%';
+
+        const uptime = totalByType > 0 ? '24h+' : '--h';
+        document.getElementById('metric-uptime').textContent = uptime;
+
+        // STATISTICS - use lightweight stats
+        const breakdown = Object.entries(statsData.byType || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, count]) => `
+            <div class="stat-item">
+              <div class="stat-label">${type}</div>
+              <div class="stat-value">${count}</div>
+            </div>
+          `)
+          .join('');
+
+        // This section removed - now handled in THREAT BREAKDOWN below
+
+        // TIMELINE GRAPH - render attack timeline
+        renderTimelineChart(timelineData.timeline || []);
+
+        // Attacks - Server-side pagination
+        const totalAttacks = data.total || data.attacks.length;
+        const totalPages = data.pages || Math.ceil(totalAttacks / pageSize);
+        const paginatedAttacks = data.attacks;
+
+        const attacksHtml = paginatedAttacks
+          .map((a, idx) => {
+            const sevClass = a.severity === 'CRITICAL' ? 'critical' : a.severity === 'HIGH' ? 'warning' : 'success';
+            return `
+              <div class="table-row" onclick="toggleAttackDetail('${a.id}'); event.stopPropagation();" style="cursor: pointer;">
+                <div class="table-cell">#${padZero(a.num, 5)}</div>
+                <div class="table-cell">${new Date(a.timestamp).toLocaleTimeString().substring(0, 8)}</div>
+                <div class="table-cell ${sevClass}">${a.severity || 'MEDIUM'}</div>
+                <div class="table-cell">${a.type}</div>
+                <div class="table-cell">${a.ip}</div>
+                <div class="table-cell success">${a.endpoint} ▼</div>
+              </div>
+              ${createDetailRow(a)}
+            `;
+          })
+          .join('');
+
+        // Add pagination controls - keep separate from scroll
+        const paginationHtml = `
+          <div class="pagination-controls">
+            ${currentPage > 1 ? `<a href="#" onclick="goToPage(1, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">◄◄</a>` : ''}
+            ${currentPage > 1 ? `<a href="#" onclick="goToPage(${currentPage - 1}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">◄</a>` : ''}
+            <span style="color: #ffd93d; margin: 0 8px;">Page ${currentPage} / ${totalPages}</span>
+            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${currentPage + 1}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">►</a>` : ''}
+            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${totalPages}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">►►</a>` : ''}
+            <span style="color: #00d4ff; margin-left: 12px;">Total: ${padZero(totalAttacks, 5)} attacks</span>
+          </div>
+        `;
+
+        // Wrap attacks in scrollable container
+        const attacksContainer = `
+          <div class="attacks-table-scroll">
+            ${attacksHtml}
+          </div>
+          ${paginationHtml}
+        `;
+
+        // Smooth fade transition when updating
+        const contentEl = document.getElementById('attacks-content');
+        contentEl.classList.add('updating');
+
+        setTimeout(() => {
+          contentEl.innerHTML = attacksContainer;
+          contentEl.classList.remove('updating');
+          restoreExpandedState();
+          restoreScrollPosition();
+        }, 200);
+
+        // TOP ATTACKERS - use lightweight endpoint
+        const attackersHtml = (attackersData.topAttackers || [])
+          .slice(0, 8)
+          .map((att, idx) => `
+            <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
+              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${att.ip}</div>
+              <div style="font-weight: 900; color: #ff6b6b; text-align: right;">${att.count}</div>
+            </div>
+          `)
+          .join('');
+        document.getElementById('attackers-content').innerHTML = attackersHtml;
+
+        // STATISTICS - compact formatting
+        const statsHtml = Object.entries(statsData.byType || {})
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([type, count]) => `
+            <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
+              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
+              <div style="font-weight: 900; color: #00ff88; text-align: right;">${count}</div>
+            </div>
+          `)
+          .join('');
+        document.getElementById('stats-content').innerHTML = statsHtml;
+
+        // THREAT BREAKDOWN - compact format
+        const threatBreakdownHtml = Object.entries(statsData.byType || {})
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([type, count]) => `
+            <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
+              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
+              <div style="font-weight: 900; color: #ffd93d; text-align: right;">${count}</div>
+            </div>
+          `)
+          .join('');
+        const breakdownEl = document.getElementById('threat-breakdown-content');
+        if (breakdownEl) breakdownEl.innerHTML = threatBreakdownHtml;
+      } catch (err) {
+        console.error('Error:', err);
+        // Show DB status as disconnected on error
+        const dbStatusEl = document.getElementById('db-status');
+        const dbStatusTextEl = document.getElementById('db-status-text');
+        if (dbStatusEl && dbStatusTextEl) {
+          dbStatusEl.style.color = '#ff6b6b';
+          dbStatusEl.textContent = '●';
+          dbStatusTextEl.textContent = 'Disconnected';
+        }
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('time-display').textContent =
+        padZero(now.getHours()) + ':' +
+        padZero(now.getMinutes()) + ':' +
+        padZero(now.getSeconds());
+    }
+
+    function getAttackMethodology(type, payload) {
+      const methods = {
+        'RCE': {
+          desc: 'Remote Code Execution',
+          details: payload.includes('eval') ? 'Eval injection - attempting to execute JavaScript code directly' :
+                   payload.includes('require') ? 'Require injection - attempting to load arbitrary modules' :
+                   payload.includes('child_process') ? 'Process spawning - attempting to execute system commands' :
+                   payload.includes('spawn') ? 'Child process spawn - indirect command execution' :
+                   payload.includes('exec') ? 'Direct command execution via exec()' :
+                   'Code execution attempt via unsafe function'
+        },
+        'SQL Injection': {
+          desc: 'SQL Query Manipulation',
+          details: payload.includes('UNION') ? 'UNION-based SQLi - extracting data via UNION SELECT' :
+                   payload.includes('--') ? 'Comment injection - bypassing query logic' :
+                   payload.includes("'") ? 'Quote injection - breaking out of SQL strings' :
+                   payload.includes(';') ? 'Stacked queries - executing multiple statements' :
+                   'Database query manipulation'
+        },
+        'Path Traversal': {
+          desc: 'Directory Access Bypass',
+          details: payload.includes('../../') ? 'Multi-level directory traversal - escaping from restricted paths' :
+                   payload.includes('../') ? 'Parent directory traversal - accessing parent directories' :
+                   payload.includes('..%2f') ? 'URL-encoded traversal - bypassing input filters' :
+                   'Unauthorized file system access attempt'
+        },
+        'Command Injection': {
+          desc: 'Shell Command Execution',
+          details: payload.includes(';') ? 'Semicolon injection - chaining multiple commands' :
+                   payload.includes('|') ? 'Pipe injection - redirecting output to another command' :
+                   payload.includes('&&') ? 'Logical AND chaining - conditional command execution' :
+                   payload.includes('`') ? 'Backtick execution - command substitution' :
+                   'System shell command execution'
+        },
+        'XSS': {
+          desc: 'Cross-Site Scripting',
+          details: payload.includes('<script') ? 'Script tag injection - direct JavaScript embedding' :
+                   payload.includes('onerror') ? 'Event handler - triggering code via error events' :
+                   payload.includes('onclick') ? 'Click handler - code execution on interaction' :
+                   payload.includes('onload') ? 'Load event - code execution on element load' :
+                   'Client-side script injection'
+        },
+        'NoSQL Injection': {
+          desc: 'NoSQL Query Manipulation',
+          details: payload.includes('{$') ? 'MongoDB operator injection - manipulating query operators' :
+                   payload.includes('$ne') ? 'Not-equal bypass - authentication bypass technique' :
+                   payload.includes('$gt') ? 'Greater-than operator - logic manipulation' :
+                   'NoSQL database query manipulation'
+        },
+        'XXE': {
+          desc: 'XML External Entity',
+          details: payload.includes('DOCTYPE') ? 'Entity definition - loading external DTD' :
+                   payload.includes('SYSTEM') ? 'System entity - accessing local files' :
+                   payload.includes('file://') ? 'File protocol - reading server files' :
+                   'XML processing vulnerability'
+        },
+        'LDAP Injection': {
+          desc: 'LDAP Query Manipulation',
+          details: payload.includes('*') ? 'Wildcard injection - bypassing LDAP filters' :
+                   payload.includes('(|') ? 'OR operator - query logic bypass' :
+                   payload.includes('(&') ? 'AND operator - filter manipulation' :
+                   'LDAP directory query manipulation'
+        }
+      };
+      return methods[type] || { desc: type, details: 'Attack detected' };
+    }
+
+    let expandedAttacks = new Set();
+
+    function toggleAttackDetail(id) {
+      const detailRow = document.getElementById('detail-' + id);
+      if (detailRow) {
+        detailRow.classList.toggle('show');
+        if (detailRow.classList.contains('show')) {
+          expandedAttacks.add(id);
+        } else {
+          expandedAttacks.delete(id);
+        }
+      }
+    }
+
+    function restoreExpandedState() {
+      expandedAttacks.forEach(id => {
+        const detailRow = document.getElementById('detail-' + id);
+        if (detailRow) {
+          detailRow.classList.add('show');
+        }
+      });
+    }
+
+    let currentPage = 1;
+    const pageSize = 100;
+    let lastScrollPos = 0;
+    let isScrolling = false;
+    let scrollTimeout;
+    let autoRefreshPaused = false;
+    let isFirstLoad = true;
+
+    function goToPage(page, totalAttacks) {
+      currentPage = page;
+      const totalPages = Math.ceil(totalAttacks / pageSize);
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      lastScrollPos = 0; // Reset scroll when changing page
+      autoRefreshPaused = false;
+      loadData();
+    }
+
+    function saveScrollPosition() {
+      const scrollContainer = document.querySelector('.table-container');
+      if (scrollContainer) {
+        lastScrollPos = scrollContainer.scrollTop;
+      }
+    }
+
+    function restoreScrollPosition() {
+      // Only restore if user is not actively scrolling
+      if (!isScrolling) {
+        const scrollContainer = document.querySelector('.table-container');
+        if (scrollContainer) {
+          setTimeout(() => {
+            scrollContainer.scrollTop = lastScrollPos;
+          }, 0);
+        }
+      }
+    }
+
+    // Detect when user is scrolling - pause auto-refresh
+    document.addEventListener('scroll', function() {
+      isScrolling = true;
+      autoRefreshPaused = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(function() {
+        isScrolling = false;
+        autoRefreshPaused = false;
+      }, 1500); // Resume after 1.5 seconds of no scroll
+    }, true);
+
+    let timelineChartInstance = null;
+
+    function renderTimelineChart(timelineData) {
+      if (!timelineData || timelineData.length === 0) {
+        document.getElementById('timeline-container').innerHTML = '<div style="color: #00d4ff; padding: 20px; text-align: center;">No attacks in last hour</div>';
+        return;
+      }
+
+      const labels = timelineData.map(item => {
+        const date = new Date(item.timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      });
+
+      const counts = timelineData.map(item => item.count);
+
+      // Calculate timeline statistics
+      const currentRate = counts.length > 0 ? counts[counts.length - 1] : 0;
+      const avgRate = counts.length > 0 ? Math.round(counts.reduce((a,b) => a+b, 0) / counts.length) : 0;
+      const peakRate = Math.max(...counts, 0);
+      const isSpike = currentRate > (avgRate * 1.5) && currentRate > 3;
+
+      // Update timeline stats
+      document.getElementById('timeline-current').textContent = currentRate + '/min';
+      document.getElementById('timeline-avg').textContent = avgRate + '/min';
+      document.getElementById('timeline-peak').textContent = peakRate + '/min';
+
+      // Show spike warning if detected
+      const warningEl = document.getElementById('timeline-warning');
+      if (isSpike && warningEl) {
+        warningEl.style.display = 'inline';
+      } else if (warningEl) {
+        warningEl.style.display = 'none';
+      }
+
+      const canvas = document.getElementById('timeline-chart');
+      const ctx = canvas.getContext('2d');
+      const timelineContainer = document.getElementById('timeline-container');
+
+      // Smooth update if chart exists
+      if (timelineChartInstance) {
+        // Fade transition
+        timelineContainer.style.opacity = '0.8';
+
+        // Update chart data smoothly
+        timelineChartInstance.data.labels = labels;
+        timelineChartInstance.data.datasets[0].data = counts;
+        timelineChartInstance.update('active');
+
+        // Fade back in
+        setTimeout(() => {
+          timelineContainer.style.opacity = '1';
+        }, 150);
+        return;
+      }
+
+      // Create gradient for chart background
+      const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+      gradient.addColorStop(0, 'rgba(0, 212, 255, 0.25)');
+      gradient.addColorStop(0.5, 'rgba(0, 212, 255, 0.1)');
+      gradient.addColorStop(1, 'rgba(0, 212, 255, 0.02)');
+
+      // Create chart only once
+      timelineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Attacks/min',
+            data: counts,
+            borderColor: '#00d4ff',
+            backgroundColor: gradient,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            segment: {
+              borderColor: (ctx) => {
+                const value = ctx.p1DataIndex < counts.length ? counts[ctx.p1DataIndex] : 0;
+                const peak = Math.max(...counts, 1);
+                const intensity = value / peak;
+                if (intensity > 0.7) return '#ff6b6b';
+                if (intensity > 0.4) return '#ffd93d';
+                return '#00d4ff';
+              }
+            },
+            pointBackgroundColor: (ctx) => {
+              const value = counts[ctx.dataIndex];
+              const peak = Math.max(...counts, 1);
+              const intensity = value / peak;
+              if (intensity > 0.7) return '#ff6b6b';
+              if (intensity > 0.4) return '#ffd93d';
+              return '#00ff88';
+            },
+            pointBorderColor: '#00d4ff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointHoverBackgroundColor: '#ff6b6b',
+            pointHoverBorderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: 10 },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                color: '#00ff88',
+                font: { family: "'IBM Plex Mono', monospace", size: 11, weight: 'bold' },
+                padding: 12,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            filler: {
+              propagate: true
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: '#00d4ff',
+                font: { family: "'IBM Plex Mono', monospace", size: 10 },
+                stepSize: Math.ceil(Math.max(...counts) / 5)
+              },
+              grid: {
+                color: 'rgba(0, 212, 255, 0.15)',
+                lineWidth: 1,
+                drawBorder: false
+              }
+            },
+            x: {
+              ticks: {
+                color: '#00d4ff',
+                font: { family: "'IBM Plex Mono', monospace", size: 10 },
+                maxRotation: 45,
+                minRotation: 0
+              },
+              grid: {
+                color: 'rgba(0, 212, 255, 0.1)',
+                lineWidth: 0.5,
+                drawBorder: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function createDetailRow(attack) {
+      const methodology = getAttackMethodology(attack.type, attack.payload);
+      const escapedPayload = escapeHtml(attack.payload || 'N/A');
+      return `
+        <div class="attack-detail-row" id="detail-${attack.id}">
+          <div class="detail-line"><span class="detail-label">METHOD:</span> <span class="detail-value">${escapeHtml(methodology.desc)}</span></div>
+          <div class="detail-line"><span class="detail-label">HOW:</span> <span class="detail-value">${escapeHtml(methodology.details)}</span></div>
+          <div class="detail-line"><span class="detail-label">TIME:</span> <span class="detail-value">${escapeHtml(new Date(attack.timestamp).toISOString())}</span></div>
+          <div class="detail-line"><span class="detail-label">PARAMETER:</span> <span class="detail-value">${escapeHtml(attack.details?.param || 'N/A')}</span></div>
+          <div class="detail-line"><span class="detail-label">PAYLOAD:</span></div>
+          <div class="detail-payload" style="white-space: pre-wrap;">${escapedPayload}</div>
+          <div class="detail-line"><span class="detail-label">STATUS:</span> <span class="detail-value">${attack.rateLimit ? '⚠️ RATE LIMITED' : '✓ BLOCKED'}</span></div>
+        </div>
+      `;
+    }
+
+    loadData();
+    setInterval(loadData, 3000);
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>
