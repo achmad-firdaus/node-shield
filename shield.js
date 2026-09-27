@@ -14,18 +14,18 @@ class NodeShield {
     this.blacklistPatterns = new Set();
 
     if (process.env.DB_HOST) {
-      // PostgreSQL connection pool
+      // PostgreSQL connection pool - optimized for high concurrency
       this.pool = new Pool({
         host: process.env.DB_HOST,
         port: process.env.DB_PORT || 5432,
         database: process.env.DB_NAME || 'node_shield',
         user: process.env.DB_USER || 'shield_user',
         password: process.env.DB_PASSWORD || 'shield_password',
-        max: 150,
-        min: 10,
-        idleTimeoutMillis: 45000,
-        connectionTimeoutMillis: 8000,
-        statement_timeout: 15000
+        max: 300,
+        min: 30,
+        idleTimeoutMillis: 120000,
+        connectionTimeoutMillis: 15000,
+        statement_timeout: 30000
       });
 
       this.pool.on('error', (err) => {
