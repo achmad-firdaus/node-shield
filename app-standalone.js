@@ -2,6 +2,7 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const NodeShield = require('./shield');
 
 const shield = new NodeShield();
@@ -14,22 +15,83 @@ const mockDatabase = {
 
 let dashboardHTML = null;
 
+// Configuration from environment
+const config = {
+  port: process.env.PORT || 3001,
+  nodeEnv: process.env.NODE_ENV || 'development',
+  apiKey: process.env.API_KEY || 'development-key-not-for-production',
+  enableAuth: process.env.ENABLE_AUTH !== 'false',
+  corsEnabled: process.env.CORS_ENABLED === 'true',
+  corsOrigin: process.env.CORS_ORIGIN || 'localhost,127.0.0.1',
+  logFormat: process.env.LOG_FORMAT || 'text',
+  verbose: process.env.VERBOSE_LOGGING === 'true'
+};
+
+// Simple structured logger
+function log(level, message, data = {}) {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    level,
+    message,
+    ...(config.verbose && data)
+  };
+
+  if (config.logFormat === 'json') {
+    console.log(JSON.stringify(logEntry));
+  } else {
+    console.log(`[${timestamp}] [${level}] ${message}${config.verbose && Object.keys(data).length ? ' ' + JSON.stringify(data) : ''}`);
+  }
+}
+
 function getClientIP(req) {
-  return req.headers['x-forwarded-for']?.split(',')[0] ||
-         req.headers['x-real-ip'] ||
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+         req.headers['x-real-ip']?.trim() ||
          req.socket.remoteAddress ||
          '0.0.0.0';
+}
+
+function validateAPIKey(req) {
+  if (!config.enableAuth) return true;
+  if (config.apiKey === 'development-key-not-for-production' && config.nodeEnv === 'development') return true;
+
+  const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+  return apiKey && apiKey === config.apiKey;
+}
+
+function setSecurityHeaders(res) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com;");
+
+  if (config.corsEnabled) {
+    const origin = req.headers.origin;
+    if (origin && config.corsOrigin.split(',').map(o => o.trim()).includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization');
 }
 
 function parseBodyData(req) {
   return new Promise((resolve) => {
     let body = '';
+    const maxBodySize = 1e6;
+
     req.on('data', chunk => {
       body += chunk.toString();
-      if (body.length > 1e6) {
+      if (body.length > maxBodySize) {
         req.connection.destroy();
+        resolve(null);
       }
     });
+
     req.on('end', () => {
       try {
         if (req.headers['content-type']?.includes('application/json')) {
@@ -40,8 +102,9 @@ function parseBodyData(req) {
         } else {
           resolve({ raw: body });
         }
-      } catch {
-        resolve({ raw: body });
+      } catch (err) {
+        log('warn', 'Body parse error', { error: err.message });
+        resolve(null);
       }
     });
   });
@@ -106,11 +169,34 @@ const server = http.createServer(async (req, res) => {
     const query = parsedUrl.query;
     const clientIP = getClientIP(req);
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Set security headers
+    setSecurityHeaders(res);
 
-    // Scan headers first
-    if (scanHeaders(req.headers, shield, pathname, clientIP, res)) {
+    // Handle OPTIONS requests for CORS
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    // Handle favicon
+    if (pathname === '/favicon.ico') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+
+    // Log incoming request
+    log('info', `${req.method} ${pathname}`, { ip: clientIP, userAgent: req.headers['user-agent'] });
+
+    // Skip attack detection for dashboard and API routes (User-Agent causes false positives)
+    const isDashboard = pathname === '/' || pathname === '/dashboard';
+    const isAPIRoute = pathname.startsWith('/api/');
+
+    // Scan headers first (skip for dashboard and API routes)
+    if (!isDashboard && !isAPIRoute && scanHeaders(req.headers, shield, pathname, clientIP, res)) {
       return;
     }
 
@@ -401,6 +487,12 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Database error' }));
     });
   } else if (pathname === '/api/whitelist') {
+    if (!validateAPIKey(req) && config.enableAuth) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+      return;
+    }
+
     if (req.method === 'GET') {
       const whitelist = {
         ips: Array.from(shield.whitelistIPs),
@@ -410,6 +502,11 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(whitelist));
     } else if (req.method === 'POST') {
       const bodyData = await parseBodyData(req);
+      if (!bodyData) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+        return;
+      }
       const { type, value } = bodyData;
       if (!type || !value) {
         res.writeHead(400);
@@ -418,10 +515,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.addIPToWhitelist(value);
+        log('info', `IP added to whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to whitelist` }));
       } else if (type === 'pattern') {
         shield.addPatternToWhitelist(value);
+        log('info', `Pattern added to whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to whitelist` }));
       } else {
@@ -430,6 +529,11 @@ const server = http.createServer(async (req, res) => {
       }
     } else if (req.method === 'DELETE') {
       const bodyData = await parseBodyData(req);
+      if (!bodyData) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+        return;
+      }
       const { type, value } = bodyData;
       if (!type || !value) {
         res.writeHead(400);
@@ -438,10 +542,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.removeIPFromWhitelist(value);
+        log('info', `IP removed from whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} removed from whitelist` }));
       } else if (type === 'pattern') {
         shield.removePatternFromWhitelist(value);
+        log('info', `Pattern removed from whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" removed from whitelist` }));
       } else {
@@ -450,6 +556,12 @@ const server = http.createServer(async (req, res) => {
       }
     }
   } else if (pathname === '/api/blacklist') {
+    if (!validateAPIKey(req) && config.enableAuth) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+      return;
+    }
+
     if (req.method === 'GET') {
       const blacklist = {
         ips: Array.from(shield.blacklistIPs),
@@ -459,6 +571,11 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(blacklist));
     } else if (req.method === 'POST') {
       const bodyData = await parseBodyData(req);
+      if (!bodyData) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+        return;
+      }
       const { type, value } = bodyData;
       if (!type || !value) {
         res.writeHead(400);
@@ -467,10 +584,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.addIPToBlacklist(value);
+        log('warn', `IP added to blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to blacklist` }));
       } else if (type === 'pattern') {
         shield.addPatternToBlacklist(value);
+        log('warn', `Pattern added to blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to blacklist` }));
       } else {
@@ -479,6 +598,11 @@ const server = http.createServer(async (req, res) => {
       }
     } else if (req.method === 'DELETE') {
       const bodyData = await parseBodyData(req);
+      if (!bodyData) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+        return;
+      }
       const { type, value } = bodyData;
       if (!type || !value) {
         res.writeHead(400);
@@ -487,10 +611,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.removeIPFromBlacklist(value);
+        log('info', `IP removed from blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} removed from blacklist` }));
       } else if (type === 'pattern') {
         shield.removePatternFromBlacklist(value);
+        log('info', `Pattern removed from blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" removed from blacklist` }));
       } else {
@@ -499,8 +625,14 @@ const server = http.createServer(async (req, res) => {
       }
     }
   } else if (pathname === '/api/reset' && req.method === 'POST') {
-    shield.logs = [];
-    shield.saveLogs();
+    if (!validateAPIKey(req) && config.enableAuth) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+      return;
+    }
+
+    shield.inMemoryAttacks = [];
+    log('warn', 'Attacks log reset by admin');
     res.writeHead(200);
     res.end(JSON.stringify({ message: 'Attacks log reset' }));
   } else if (pathname === '/search') {
@@ -527,15 +659,49 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`🛡️  Node Shield is running on http://localhost:${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log('');
-  console.log('Try these attack scenarios:');
-  console.log(`  SQL Injection: curl "http://localhost:${PORT}/search?q=admin' UNION SELECT 1,2,3--"`);
-  console.log(`  RCE: curl "http://localhost:${PORT}/execute?cmd=require('child_process').exec('ls')"`);
-  console.log(`  Path Traversal: curl "http://localhost:${PORT}/file?file=../../etc/passwd"`);
-  console.log('');
-  console.log('Press Ctrl+C to stop');
+function generateAPIKey() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  log('info', 'SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    log('info', 'HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  log('info', 'SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    log('info', 'HTTP server closed');
+    process.exit(0);
+  });
+});
+
+server.listen(config.port, () => {
+  log('info', `🛡️  Node Shield is running on http://localhost:${config.port}`);
+  log('info', `📊 Dashboard: http://localhost:${config.port}`);
+
+  if (config.enableAuth && config.apiKey === 'development-key-not-for-production' && config.nodeEnv === 'production') {
+    log('warn', '⚠️  SECURITY WARNING: Using default API key. Set API_KEY environment variable!');
+    log('warn', `    Generate one: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`);
+  } else if (config.enableAuth) {
+    log('info', `🔐 API Authentication: ENABLED (API_KEY=${config.apiKey.substring(0, 8)}...)`);
+  }
+
+  log('info', `📝 Configuration: NODE_ENV=${config.nodeEnv}, CORS=${config.corsEnabled ? 'enabled' : 'disabled'}`);
+  log('info', '');
+  log('info', 'Try these attack scenarios:');
+  log('info', `  SQL Injection: curl "http://localhost:${config.port}/search?q=admin' UNION SELECT 1,2,3--"`);
+  log('info', `  RCE: curl "http://localhost:${config.port}/execute?cmd=require('child_process').exec('ls')"`);
+  log('info', `  Path Traversal: curl "http://localhost:${config.port}/file?file=../../etc/passwd"`);
+  log('info', '');
+  log('info', 'Protected endpoints (require API key):');
+  log('info', `  POST /api/reset -H "X-API-Key: YOUR_API_KEY"`);
+  log('info', `  POST /api/whitelist -H "X-API-Key: YOUR_API_KEY"`);
+  log('info', `  POST /api/blacklist -H "X-API-Key: YOUR_API_KEY"`);
+  log('info', '');
+  log('info', 'Press Ctrl+C to stop');
 });

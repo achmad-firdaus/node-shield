@@ -8,6 +8,8 @@
   },
   "scripts": {
     "start": "node app-standalone.js",
+    "start:prod": "NODE_ENV=production node app-standalone.js",
+    "dev": "NODE_ENV=development node app-standalone.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:integration": "node test.js",
@@ -16,7 +18,12 @@
     "migrate": "node migrate.js",
     "migrate:reset": "node migrate.js --reset",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "docker:build": "docker build -t node-shield:latest .",
+    "docker:run": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "health": "curl http://localhost:3001/api/health"
   },
   "keywords": [
     "security",

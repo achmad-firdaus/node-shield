@@ -42,7 +42,21 @@
 
 ## 🚀 LAUNCH SEQUENCE
 
-### ▸ OPTION 1: Standalone Node.js
+### ▸ OPTION 1: Docker Compose (Recommended for Development & Production)
+```bash
+# Build image fresh and start with PostgreSQL database
+$ docker-compose down && docker-compose build --no-cache && docker-compose up
+
+[+] Building 2.3s (15/15) FINISHED
+[+] Running containers...
+[+] PostgreSQL ready
+[+] Migrations applied
+[+] NODE SHIELD online at http://localhost:3001
+```
+
+**→ Dashboard:** `http://localhost:3001` | **DB:** PostgreSQL | **Data:** Persistent
+
+### ▸ OPTION 2: Standalone Node.js (Development Only)
 ```bash
 $ PORT=3001 npm start
 
@@ -51,15 +65,7 @@ $ PORT=3001 npm start
 [NODE SHIELD] Dashboard → http://localhost:3001
 ```
 
-### ▸ OPTION 2: Docker Container
-```bash
-$ docker-compose up
-
-[+] Building 2.3s (15/15) FINISHED
-[+] Running containers...
-[+] PostgreSQL ready
-[+] NODE SHIELD online at http://localhost:3000
-```
+**→ Dashboard:** `http://localhost:3001` | **Storage:** In-Memory (temp data)
 
 ### ▸ OPTION 3: npm Package
 ```bash
@@ -68,8 +74,6 @@ $ node
 > const NodeShield = require('node-shield');
 > const shield = new NodeShield();
 ```
-
-**→ Visit Dashboard:** `http://localhost:3001` (standalone) or `http://localhost:3000` (docker)
 
 ## 🧪 THREAT SIMULATION
 
@@ -265,16 +269,29 @@ const server = NodeShield.createServer(3000);
 ## 📦 DEPLOYMENT
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ ENVIRONMENT                │ COMMAND                            │
-├─────────────────────────────────────────────────────────────────┤
-│ Local Development          │ npm start                          │
-│ With Database              │ docker-compose up                  │
-│ Production (Node.js)       │ NODE_ENV=production npm start      │
-│ Production (Docker)        │ docker-compose -f docker-compose.  │
-│                            │ yml up -d                          │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ ENVIRONMENT                 │ COMMAND                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ Dev (in-memory, quick)      │ npm start                             │
+│ Dev (with DB, full testing) │ docker-compose down && \             │
+│                             │ docker-compose build --no-cache && \ │
+│                             │ docker-compose up                    │
+│ Production (Docker)         │ docker-compose -f docker-compose.yml │
+│                             │ up -d                                │
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### ▸ Development Notes
+- Use **docker-compose** for testing the complete system (app + database)
+- Always use `--no-cache` flag when rebuilding to get latest code changes
+- Dashboard updates require Docker image rebuild (not live-reloaded in container)
+- Standalone mode (`npm start`) is for quick iterations; data is temporary
+
+### ▸ Production Notes
+- Use docker-compose for reliable multi-service orchestration
+- Persistent PostgreSQL storage for attack logs
+- Auto-migrations on container startup
+- Health checks ensure uptime monitoring
 
 For detailed deployment steps, see [DEPLOYMENT.md](DEPLOYMENT.md)
 

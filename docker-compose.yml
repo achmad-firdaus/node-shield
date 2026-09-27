@@ -1,41 +1,73 @@
+version: '3.9'
+
 services:
   postgres:
     image: postgres:15-alpine
     container_name: node-shield-db
     environment:
-      POSTGRES_DB: node_shield
-      POSTGRES_USER: shield_user
-      POSTGRES_PASSWORD: shield_password
+      POSTGRES_DB: ${DB_NAME:-node_shield}
+      POSTGRES_USER: ${DB_USER:-shield_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-shield_password}
+      POSTGRES_INITDB_ARGS: "-c max_connections=100"
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shield_user -d node_shield"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-shield_user} -d ${DB_NAME:-node_shield}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - shield-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   node-shield:
     build: .
     container_name: node-shield-app
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: node_shield
-      DB_USER: shield_user
-      DB_PASSWORD: shield_password
-      PORT: 3001
-    command: >
-      sh -c "npm run migrate && npm start"
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-node_shield}
+      DB_USER: ${DB_USER:-shield_user}
+      DB_PASSWORD: ${DB_PASSWORD:-shield_password}
+      PORT: ${PORT:-3001}
+      API_KEY: ${API_KEY:-your-secure-api-key-here-min-32-chars}
+      ENABLE_AUTH: ${ENABLE_AUTH:-true}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      VERBOSE_LOGGING: ${VERBOSE_LOGGING:-false}
+    command: sh -c "npm run migrate && npm start"
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:${PORT:-3001}"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - shield-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3001}/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  shield-network:
+    driver: bridge
