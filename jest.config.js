@@ -18,13 +18,15 @@ module.exports = {
     },
   },
   testMatch: [
-    '**/__tests__/**/*.js',
+    '**/__tests__/**/*.test.js',
+    '**/__tests__/**/*.spec.js',
     '**/?(*.)+(spec|test).js',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
     '/coverage/',
+    'config\\.setup\\.js$',
     'test\\.js$',
     'test-enhanced-scanning\\.js$',
     'test-docker-15min\\.sh$',
