@@ -211,7 +211,7 @@ class NodeShield {
   }
 
   detectNoSQLInjection(query) {
-    const noSqlPatterns = ['{$', '[$', '{}', 'db.', 'collection.', 'ne:', 'gt:', 'regex:', 'ne:null'];
+    const noSqlPatterns = ['{"$', '[$', '{}', 'db.', 'collection.', '$ne', '$gt', '$where', '$regex'];
     const queryStr = String(query).toLowerCase();
     return noSqlPatterns.some(pattern => queryStr.includes(pattern));
   }
