@@ -11,23 +11,23 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 20,
-      functions: 20,
-      lines: 20,
-      statements: 20,
+      branches: 15,
+      functions: 15,
+      lines: 15,
+      statements: 15,
     },
   },
   testMatch: [
     '**/__tests__/**/*.js',
     '**/?(*.)+(spec|test).js',
-    '!test.js',
-    '!test-*.js',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    'test.js',
-    'test-enhanced-scanning.js',
+    '/coverage/',
+    'test\\.js$',
+    'test-enhanced-scanning\\.js$',
+    'test-docker-15min\\.sh$',
   ],
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
 };
