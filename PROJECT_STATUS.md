@@ -39,7 +39,16 @@
 ### Request Scanning
 - [x] Query parameter scanning
 - [x] Request body scanning (JSON & form-encoded)
-- [x] HTTP header scanning
+- [x] HTTP header scanning (User-Agent, Cookie, Authorization, Referer, custom headers)
+
+### Logging & Monitoring
+- [x] Structured logging system (5 levels: DEBUG, INFO, WARN, ERROR, CRITICAL)
+- [x] Automatic log rotation (daily + size-based)
+- [x] JSON and text format support
+- [x] File persistence with configurable retention
+- [x] Real-time metrics and monitoring
+- [x] Health check endpoint (`/api/health`)
+- [x] Statistics aggregation (`/api/stats`)
 
 ### API
 - [x] REST API for attacks (`/api/attacks`)
