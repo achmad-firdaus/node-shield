@@ -8,7 +8,6 @@ services:
       POSTGRES_DB: ${DB_NAME:-node_shield}
       POSTGRES_USER: ${DB_USER:-shield_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-shield_password}
-      POSTGRES_INITDB_ARGS: "-c max_connections=100"
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
