@@ -36,6 +36,11 @@
 - [x] Dark theme with accessibility
 - [x] Mobile responsive design
 
+### Request Scanning
+- [x] Query parameter scanning
+- [x] Request body scanning (JSON & form-encoded)
+- [x] HTTP header scanning
+
 ### API
 - [x] REST API for attacks (`/api/attacks`)
 - [x] Statistics endpoint (`/api/stats`)
@@ -96,7 +101,6 @@
 - [ ] Deploy to Vercel for public demo
 - [ ] Add custom pattern support
 - [ ] Implement whitelisting
-- [ ] Request body scanning
 - [ ] Add authentication for dashboard
 
 ### Medium Term
@@ -182,8 +186,7 @@ This project demonstrates:
 **What to improve:**
 - Add ML-based detection for sophisticated attacks
 - Implement persistent database instead of JSON file
-- Add real alerting system
-- Support for request body scanning
+- Add real alerting system (email/Slack/webhooks)
 
 **Lessons learned:**
 - Start with MVP, iterate based on feedback
