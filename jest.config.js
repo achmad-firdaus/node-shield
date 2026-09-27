@@ -29,5 +29,5 @@ module.exports = {
     'test-enhanced-scanning\\.js$',
     'test-docker-15min\\.sh$',
   ],
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/config.setup.js'],
 };
