@@ -1,0 +1,29 @@
+# Development
+test.js
+quick-test.sh
+examples-express.js
+.git
+.gitignore
+.playwright-mcp
+
+# Documentation
+DESIGN.md
+PROJECT_STATUS.md
+README-DOCKER.md
+DEPLOYMENT.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+init.sql
+
+# Dashboard demos
+dashboard-*.html
+dashboard-*.png
+
+# Backups
+*.bak
+
+# Node
+node_modules/
+package-lock.json
