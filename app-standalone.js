@@ -21,7 +21,85 @@ function getClientIP(req) {
          '0.0.0.0';
 }
 
-const server = http.createServer((req, res) => {
+function parseBodyData(req) {
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+      if (body.length > 1e6) {
+        req.connection.destroy();
+      }
+    });
+    req.on('end', () => {
+      try {
+        if (req.headers['content-type']?.includes('application/json')) {
+          resolve(JSON.parse(body));
+        } else if (req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
+          const params = new URLSearchParams(body);
+          resolve(Object.fromEntries(params));
+        } else {
+          resolve({ raw: body });
+        }
+      } catch {
+        resolve({ raw: body });
+      }
+    });
+  });
+}
+
+function checkAttacksInData(data, shield, pathname, clientIP, res) {
+  const detectionMethods = [
+    { detector: 'detectSQLInjection', type: 'SQL Injection' },
+    { detector: 'detectRCE', type: 'RCE' },
+    { detector: 'detectPathTraversal', type: 'Path Traversal' },
+    { detector: 'detectXSS', type: 'XSS' },
+    { detector: 'detectCommandInjection', type: 'Command Injection' },
+    { detector: 'detectNoSQLInjection', type: 'NoSQL Injection' },
+    { detector: 'detectXXE', type: 'XXE' },
+    { detector: 'detectLDAPInjection', type: 'LDAP Injection' }
+  ];
+
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'string') {
+      for (const { detector, type } of detectionMethods) {
+        if (shield[detector](value)) {
+          shield.logAttack(type, pathname, value, { param: key, source: 'body' }, clientIP);
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: `${type} detected and blocked` }));
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function scanHeaders(headers, shield, pathname, clientIP, res) {
+  const headersToCheck = ['user-agent', 'referer', 'cookie', 'authorization', 'x-custom-header'];
+  const detectionMethods = [
+    { detector: 'detectSQLInjection', type: 'SQL Injection' },
+    { detector: 'detectRCE', type: 'RCE' },
+    { detector: 'detectXSS', type: 'XSS' },
+    { detector: 'detectCommandInjection', type: 'Command Injection' }
+  ];
+
+  for (const headerName of headersToCheck) {
+    const headerValue = headers[headerName];
+    if (headerValue) {
+      for (const { detector, type } of detectionMethods) {
+        if (shield[detector](headerValue)) {
+          shield.logAttack(type, pathname, headerValue, { source: 'header', header: headerName }, clientIP);
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: `${type} in header detected and blocked` }));
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+const server = http.createServer(async (req, res) => {
   try {
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
@@ -31,62 +109,79 @@ const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    // Check for attacks
+    // Scan headers first
+    if (scanHeaders(req.headers, shield, pathname, clientIP, res)) {
+      return;
+    }
+
+    // Check query parameters
     if (query.q && shield.detectSQLInjection(query.q)) {
-      shield.logAttack('SQL Injection', pathname, query.q, { param: 'q' }, clientIP);
+      shield.logAttack('SQL Injection', pathname, query.q, { param: 'q', source: 'query' }, clientIP);
       res.writeHead(400);
       res.end(JSON.stringify({ error: 'SQL injection detected and blocked' }));
       return;
     }
 
-  if (query.cmd && shield.detectRCE(query.cmd)) {
-    shield.logAttack('RCE', pathname, query.cmd, { param: 'cmd' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'RCE attempt detected and blocked' }));
-    return;
-  }
+    if (query.cmd && shield.detectRCE(query.cmd)) {
+      shield.logAttack('RCE', pathname, query.cmd, { param: 'cmd', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'RCE attempt detected and blocked' }));
+      return;
+    }
 
-  if (query.file && shield.detectPathTraversal(query.file)) {
-    shield.logAttack('Path Traversal', pathname, query.file, { param: 'file' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'Path traversal detected and blocked' }));
-    return;
-  }
+    if (query.file && shield.detectPathTraversal(query.file)) {
+      shield.logAttack('Path Traversal', pathname, query.file, { param: 'file', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'Path traversal detected and blocked' }));
+      return;
+    }
 
-  if (query.input && shield.detectXSS(query.input)) {
-    shield.logAttack('XSS', pathname, query.input, { param: 'input' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'XSS attempt detected and blocked' }));
-    return;
-  }
+    if (query.input && shield.detectXSS(query.input)) {
+      shield.logAttack('XSS', pathname, query.input, { param: 'input', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'XSS attempt detected and blocked' }));
+      return;
+    }
 
-  if (query.shell && shield.detectCommandInjection(query.shell)) {
-    shield.logAttack('Command Injection', pathname, query.shell, { param: 'shell' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'Command injection detected and blocked' }));
-    return;
-  }
+    if (query.shell && shield.detectCommandInjection(query.shell)) {
+      shield.logAttack('Command Injection', pathname, query.shell, { param: 'shell', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'Command injection detected and blocked' }));
+      return;
+    }
 
-  if (query.nosql && shield.detectNoSQLInjection(query.nosql)) {
-    shield.logAttack('NoSQL Injection', pathname, query.nosql, { param: 'nosql' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'NoSQL injection detected and blocked' }));
-    return;
-  }
+    if (query.nosql && shield.detectNoSQLInjection(query.nosql)) {
+      shield.logAttack('NoSQL Injection', pathname, query.nosql, { param: 'nosql', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'NoSQL injection detected and blocked' }));
+      return;
+    }
 
-  if (query.xml && shield.detectXXE(query.xml)) {
-    shield.logAttack('XXE', pathname, query.xml, { param: 'xml' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'XXE attack detected and blocked' }));
-    return;
-  }
+    if (query.xml && shield.detectXXE(query.xml)) {
+      shield.logAttack('XXE', pathname, query.xml, { param: 'xml', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'XXE attack detected and blocked' }));
+      return;
+    }
 
-  if (query.ldap && shield.detectLDAPInjection(query.ldap)) {
-    shield.logAttack('LDAP Injection', pathname, query.ldap, { param: 'ldap' }, clientIP);
-    res.writeHead(400);
-    res.end(JSON.stringify({ error: 'LDAP injection detected and blocked' }));
-    return;
-  }
+    if (query.ldap && shield.detectLDAPInjection(query.ldap)) {
+      shield.logAttack('LDAP Injection', pathname, query.ldap, { param: 'ldap', source: 'query' }, clientIP);
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'LDAP injection detected and blocked' }));
+      return;
+    }
+
+    // Parse and check request body for POST requests
+    if ((req.method === 'POST' || req.method === 'PUT') && pathname !== '/api/whitelist' && pathname !== '/api/blacklist') {
+      try {
+        const bodyData = await parseBodyData(req);
+        if (checkAttacksInData(bodyData, shield, pathname, clientIP, res)) {
+          return;
+        }
+      } catch (err) {
+        console.error('[BODY PARSE ERROR]', err.message);
+      }
+    }
 
   // Route handlers
   if (pathname === '/' || pathname === '/dashboard') {
@@ -305,6 +400,104 @@ const server = http.createServer((req, res) => {
       res.writeHead(500);
       res.end(JSON.stringify({ error: 'Database error' }));
     });
+  } else if (pathname === '/api/whitelist') {
+    if (req.method === 'GET') {
+      const whitelist = {
+        ips: Array.from(shield.whitelistIPs),
+        patterns: Array.from(shield.whitelistPatterns)
+      };
+      res.writeHead(200);
+      res.end(JSON.stringify(whitelist));
+    } else if (req.method === 'POST') {
+      const bodyData = await parseBodyData(req);
+      const { type, value } = bodyData;
+      if (!type || !value) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Missing type or value' }));
+        return;
+      }
+      if (type === 'ip') {
+        shield.addIPToWhitelist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `IP ${value} added to whitelist` }));
+      } else if (type === 'pattern') {
+        shield.addPatternToWhitelist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `Pattern "${value}" added to whitelist` }));
+      } else {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid type. Use "ip" or "pattern"' }));
+      }
+    } else if (req.method === 'DELETE') {
+      const bodyData = await parseBodyData(req);
+      const { type, value } = bodyData;
+      if (!type || !value) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Missing type or value' }));
+        return;
+      }
+      if (type === 'ip') {
+        shield.removeIPFromWhitelist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `IP ${value} removed from whitelist` }));
+      } else if (type === 'pattern') {
+        shield.removePatternFromWhitelist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `Pattern "${value}" removed from whitelist` }));
+      } else {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid type. Use "ip" or "pattern"' }));
+      }
+    }
+  } else if (pathname === '/api/blacklist') {
+    if (req.method === 'GET') {
+      const blacklist = {
+        ips: Array.from(shield.blacklistIPs),
+        patterns: Array.from(shield.blacklistPatterns)
+      };
+      res.writeHead(200);
+      res.end(JSON.stringify(blacklist));
+    } else if (req.method === 'POST') {
+      const bodyData = await parseBodyData(req);
+      const { type, value } = bodyData;
+      if (!type || !value) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Missing type or value' }));
+        return;
+      }
+      if (type === 'ip') {
+        shield.addIPToBlacklist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `IP ${value} added to blacklist` }));
+      } else if (type === 'pattern') {
+        shield.addPatternToBlacklist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `Pattern "${value}" added to blacklist` }));
+      } else {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid type. Use "ip" or "pattern"' }));
+      }
+    } else if (req.method === 'DELETE') {
+      const bodyData = await parseBodyData(req);
+      const { type, value } = bodyData;
+      if (!type || !value) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Missing type or value' }));
+        return;
+      }
+      if (type === 'ip') {
+        shield.removeIPFromBlacklist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `IP ${value} removed from blacklist` }));
+      } else if (type === 'pattern') {
+        shield.removePatternFromBlacklist(value);
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: `Pattern "${value}" removed from blacklist` }));
+      } else {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid type. Use "ip" or "pattern"' }));
+      }
+    }
   } else if (pathname === '/api/reset' && req.method === 'POST') {
     shield.logs = [];
     shield.saveLogs();

@@ -1,5 +1,10 @@
 # 🛡️ Node Shield
 
+[![Tests](https://github.com/achmad-firdaus/node-shield/actions/workflows/test.yml/badge.svg)](https://github.com/achmad-firdaus/node-shield/actions/workflows/test.yml)
+[![npm version](https://badge.fury.io/js/node-shield.svg)](https://www.npmjs.com/package/node-shield)
+[![codecov](https://codecov.io/gh/achmad-firdaus/node-shield/branch/main/graph/badge.svg)](https://codecov.io/gh/achmad-firdaus/node-shield)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Production-grade runtime protection for Node.js applications. Detects and blocks real-world attacks in real-time.
 
 ## Features
@@ -14,8 +19,10 @@ Production-grade runtime protection for Node.js applications. Detects and blocks
   - XXE (XML External Entity)
   - LDAP Injection
 
+- **Multi-source Scanning** — Detect attacks in query params, POST body, headers, and form data
 - **Real-time Dashboard** — See attacks being blocked as they happen (auto-refreshing)
 - **IP Tracking & Brute Force Detection** — Identify attackers and rate-limit aggressive IPs
+- **Whitelist/Blacklist Management** — Allow trusted IPs/patterns or block suspicious ones
 - **Severity Levels** — CRITICAL (RCE, XXE) → HIGH → MEDIUM → LOW (XSS)
 - **Multi-view Analytics** — Attack history, top attackers, detailed statistics
 - **Zero Client Code Changes** — Works transparently with existing Node.js apps
@@ -80,6 +87,48 @@ curl http://localhost:3001/api/attacks
 ### Reset Attacks
 ```bash
 curl -X POST http://localhost:3001/api/reset
+```
+
+### Whitelist Management
+```bash
+# View whitelist
+curl http://localhost:3001/api/whitelist
+
+# Add IP to whitelist
+curl -X POST http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "ip", "value": "192.168.1.100"}'
+
+# Add pattern to whitelist
+curl -X POST http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "pattern", "value": "localhost"}'
+
+# Remove from whitelist
+curl -X DELETE http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "ip", "value": "192.168.1.100"}'
+```
+
+### Blacklist Management
+```bash
+# View blacklist
+curl http://localhost:3001/api/blacklist
+
+# Add IP to blacklist
+curl -X POST http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "ip", "value": "192.168.1.50"}'
+
+# Add pattern to blacklist (extra dangerous patterns)
+curl -X POST http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "pattern", "value": "DROP TABLE"}'
+
+# Remove from blacklist
+curl -X DELETE http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type": "ip", "value": "192.168.1.50"}'
 ```
 
 ## Architecture

@@ -6,6 +6,10 @@ class NodeShield {
     this.attackCounter = 0;
     this.useInMemoryDB = !process.env.DB_HOST;
     this.inMemoryAttacks = [];
+    this.whitelistIPs = new Set();
+    this.blacklistIPs = new Set();
+    this.whitelistPatterns = new Set();
+    this.blacklistPatterns = new Set();
 
     if (process.env.DB_HOST) {
       // PostgreSQL connection pool
@@ -32,9 +36,89 @@ class NodeShield {
     }
   }
 
+  isIPWhitelisted(ip) {
+    return this.whitelistIPs.has(ip);
+  }
+
+  isIPBlacklisted(ip) {
+    return this.blacklistIPs.has(ip);
+  }
+
+  isPayloadWhitelisted(payload) {
+    for (const pattern of this.whitelistPatterns) {
+      if (String(payload).includes(pattern)) return true;
+    }
+    return false;
+  }
+
+  isPayloadBlacklisted(payload) {
+    for (const pattern of this.blacklistPatterns) {
+      if (String(payload).includes(pattern)) return true;
+    }
+    return false;
+  }
+
+  addIPToWhitelist(ip) {
+    this.whitelistIPs.add(ip);
+    console.log(`[SHIELD] IP ${ip} added to whitelist`);
+  }
+
+  removeIPFromWhitelist(ip) {
+    this.whitelistIPs.delete(ip);
+    console.log(`[SHIELD] IP ${ip} removed from whitelist`);
+  }
+
+  addIPToBlacklist(ip) {
+    this.blacklistIPs.add(ip);
+    console.log(`[SHIELD] IP ${ip} added to blacklist`);
+  }
+
+  removeIPFromBlacklist(ip) {
+    this.blacklistIPs.delete(ip);
+    console.log(`[SHIELD] IP ${ip} removed from blacklist`);
+  }
+
+  addPatternToWhitelist(pattern) {
+    this.whitelistPatterns.add(pattern);
+    console.log(`[SHIELD] Pattern "${pattern}" added to whitelist`);
+  }
+
+  removePatternFromWhitelist(pattern) {
+    this.whitelistPatterns.delete(pattern);
+    console.log(`[SHIELD] Pattern "${pattern}" removed from whitelist`);
+  }
+
+  addPatternToBlacklist(pattern) {
+    this.blacklistPatterns.add(pattern);
+    console.log(`[SHIELD] Pattern "${pattern}" added to blacklist`);
+  }
+
+  removePatternFromBlacklist(pattern) {
+    this.blacklistPatterns.delete(pattern);
+    console.log(`[SHIELD] Pattern "${pattern}" removed from blacklist`);
+  }
+
   logAttack(type, endpoint, payload, details, ip = '0.0.0.0') {
+    // Check whitelist/blacklist before logging
+    if (this.isIPWhitelisted(ip)) {
+      console.log(`[SHIELD] [WHITELISTED] Skipped ${type} from IP ${ip} (whitelisted)`);
+      return false;
+    }
+
+    if (this.isIPBlacklisted(ip)) {
+      console.log(`[SHIELD] [BLACKLISTED] Blocked ${type} from IP ${ip} (blacklisted IP)`);
+      this.attackCounter++;
+    } else if (this.isPayloadWhitelisted(payload)) {
+      console.log(`[SHIELD] [WHITELISTED] Skipped ${type} from ${ip} (payload whitelisted)`);
+      return false;
+    } else if (this.isPayloadBlacklisted(payload)) {
+      console.log(`[SHIELD] [EXTRA DANGEROUS] Blocked ${type} from ${ip} (extra blacklist pattern matched)`);
+      this.attackCounter++;
+    } else {
+      this.attackCounter++;
+    }
+
     const severity = this.calculateSeverity(type);
-    this.attackCounter++;
     const id = Date.now().toString() + '-' + this.attackCounter;
     const timestamp = new Date().toISOString();
     const payloadStr = String(payload).slice(0, 200);
@@ -75,6 +159,8 @@ class NodeShield {
     } else {
       console.log(`[SHIELD] [${severity}] Blocked ${type} from ${ip}`);
     }
+
+    return true;
   }
 
   calculateSeverity(attackType) {

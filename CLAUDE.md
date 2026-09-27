@@ -28,18 +28,30 @@ The `NodeShield` class is the heart of the system. It:
    - XXE: XML entity patterns
    - LDAP Injection: LDAP-specific keywords
 
-2. **Logs attacks** with metadata:
+2. **Scans multiple sources**:
+   - Query parameters (traditional GET attacks)
+   - Request body (POST/PUT payloads in JSON and form-encoded formats)
+   - HTTP headers (User-Agent, Referer, Cookie, Authorization, custom headers)
+
+3. **Logs attacks** with metadata:
    - Auto-incremented ID (`timestamp-counter`)
    - Attack type, endpoint, payload (truncated to 200 chars)
    - Client IP (extracted from headers or socket)
    - Severity level (CRITICAL → HIGH → MEDIUM → LOW)
+   - Source information (query, body, header)
    - Details as JSON
 
-3. **Tracks IP rates** for brute force detection:
+4. **Whitelist/Blacklist Management**:
+   - Whitelist trusted IPs and safe patterns (skip detection)
+   - Blacklist suspicious IPs and dangerous patterns (force alert)
+   - Query endpoints: `/api/whitelist`, `/api/blacklist`
+   - Managed via POST/DELETE methods
+
+5. **Tracks IP rates** for brute force detection:
    - Maintains `ipRates` object tracking count, first-seen time, and attack types per IP
    - Triggers rate-limit alert if >5 attacks in 10 seconds
 
-4. **Dual storage modes**:
+6. **Dual storage modes**:
    - **PostgreSQL** (when `DB_HOST` env var is set): Uses connection pool to persist attacks
    - **In-memory** (fallback): Stores in `inMemoryAttacks` array; useful for development/testing
    - Automatically falls back to in-memory if DB connection fails
@@ -52,7 +64,9 @@ The `NodeShield` class is the heart of the system. It:
    - Uses Node.js native `http` module
    - Mounts a pre-built dashboard HTML file (`dashboard-as400pro.html`)
    - Handles request parsing and attack checks inline
-   - Serves API endpoints (`/api/attacks`, `/api/stats`, `/api/count`, `/api/reset`)
+   - Parses JSON and form-encoded request bodies for POST/PUT requests
+   - Scans headers for attack patterns
+   - Serves API endpoints (`/api/attacks`, `/api/stats`, `/api/count`, `/api/reset`, `/api/whitelist`, `/api/blacklist`)
    - Caches dashboard HTML to avoid disk reads
 
 2. **app.js** (Express.js)
@@ -235,14 +249,45 @@ If PostgreSQL is unavailable:
 - [ ] Set up monitoring for `/api/stats` (optional)
 - [ ] Document custom detection rules if added
 
+## Whitelist/Blacklist System
+
+The shield supports IP and pattern-based whitelisting and blacklisting:
+
+**Whitelist:**
+- Skip logging for trusted IPs (e.g., internal monitoring tools)
+- Skip detection for safe patterns (e.g., legitimate SQL keywords in non-malicious contexts)
+
+**Blacklist:**
+- Force-log IPs marked as always-suspicious
+- Flag patterns that should always trigger alerts regardless of context
+
+**API Endpoints:**
+```
+GET  /api/whitelist          # View whitelist
+POST /api/whitelist          # Add IP/pattern: {type: "ip"|"pattern", value: "..."}
+DELETE /api/whitelist        # Remove IP/pattern
+
+GET  /api/blacklist          # View blacklist
+POST /api/blacklist          # Add IP/pattern
+DELETE /api/blacklist        # Remove IP/pattern
+```
+
+## Multi-Source Attack Detection
+
+Detection now scans three sources:
+1. **Query Parameters** — Traditional GET/query string attacks
+2. **Request Body** — POST/PUT JSON and form-encoded bodies (parsed automatically)
+3. **Headers** — User-Agent, Referer, Cookie, Authorization, custom headers
+
 ## Known Limitations & TODOs
 
-1. **No request body scanning** — Only query parameters checked
-2. **Pattern-based detection** — Prone to false positives (e.g., "select" in text)
-3. **No request rate limiting** — Only IP tracking, no automatic blocking
-4. **Dashboard polling-based** — Not real-time WebSocket (acceptable for MVP)
-5. **Single attack table** — No partitioning for long-term data retention
-6. **No authentication** — Dashboard is public by default
+1. ✅ **Request body scanning** — Now checks POST/PUT bodies (JSON and form-encoded)
+2. ✅ **Header scanning** — Scans User-Agent, Referer, Cookie, Authorization headers
+3. ✅ **Whitelist/blacklist** — IP and pattern-based allow/deny rules
+4. **Pattern-based detection** — Prone to false positives (e.g., "select" in email addresses)
+5. **Dashboard polling-based** — Not real-time WebSocket (acceptable for MVP)
+6. **Single attack table** — No partitioning for long-term data retention
+7. **No authentication** — Dashboard is public by default
 
 ## Migration System
 
