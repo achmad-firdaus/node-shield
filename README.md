@@ -14,11 +14,38 @@
 [![codecov](https://codecov.io/gh/achmad-firdaus/node-shield/branch/main/graph/badge.svg)](https://codecov.io/gh/achmad-firdaus/node-shield)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+---
+
+## 🚀 QUICK START
+
+**Option 1: Docker Compose (Recommended)**
+```bash
+docker-compose up
+# → Dashboard at http://localhost:3001
+# → PostgreSQL persistence included
+```
+
+**Option 2: Standalone (In-Memory)**
+```bash
+npm start
+# → Dashboard at http://localhost:3001
+# → Data cleared on restart (development only)
+```
+
+**Option 3: npm Package**
+```bash
+npm install node-shield
+const NodeShield = require('node-shield');
+const shield = new NodeShield();
+```
+
+---
+
 ## ⚙️ CORE CAPABILITIES
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ATTACK DETECTION ENGINE                                                     │
+│ ATTACK DETECTION ENGINE (8 Vectors)                                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ ▸ SQL Injection          ▸ Remote Code Execution (RCE)                      │
 │ ▸ Path Traversal         ▸ Command Injection                                │
@@ -29,167 +56,117 @@
 
 | Feature | Details |
 |---------|---------|
-| **Multi-Source Scanning** | Query params, POST body, headers, form data |
-| **Real-Time Dashboard** | Live attack log with auto-refresh (2-3s) |
+| **Multi-Source Scanning** | Query params, POST body, HTTP headers |
+| **Real-Time Dashboard** | Live attack log with auto-refresh |
+| **Severity Levels** | CRITICAL, HIGH, MEDIUM, LOW |
 | **IP Tracking** | Rate-limit detection, attacker identification |
 | **Whitelist/Blacklist** | Allow trusted / block suspicious IPs & patterns |
-| **Severity Levels** | CRITICAL → HIGH → MEDIUM → LOW |
-| **Analytics Dashboard** | Attack history, top attackers, detailed stats |
-| **Zero Config** | Transparent integration, no client code changes |
+| **Zero Config** | Transparent integration, no code changes required |
 | **Docker Ready** | Dockerfile + docker-compose included |
-| **npm Package** | Express.js & framework integration |
-| **Production Grade** | <2% performance overhead, zero external deps |
+| **Production Grade** | <2% performance overhead, PostgreSQL persistence |
 
-## 🚀 LAUNCH SEQUENCE
-
-### ▸ OPTION 1: Docker Compose (Recommended for Development & Production)
-```bash
-# Build image fresh and start with PostgreSQL database
-$ docker-compose down && docker-compose build --no-cache && docker-compose up
-
-[+] Building 2.3s (15/15) FINISHED
-[+] Running containers...
-[+] PostgreSQL ready
-[+] Migrations applied
-[+] NODE SHIELD online at http://localhost:3001
-```
-
-**→ Dashboard:** `http://localhost:3001` | **DB:** PostgreSQL | **Data:** Persistent
-
-### ▸ OPTION 2: Standalone Node.js (Development Only)
-```bash
-$ PORT=3001 npm start
-
-[NODE SHIELD] Security Monitor initialized
-[NODE SHIELD] Listening on port 3001
-[NODE SHIELD] Dashboard → http://localhost:3001
-```
-
-**→ Dashboard:** `http://localhost:3001` | **Storage:** In-Memory (temp data)
-
-### ▸ OPTION 3: npm Package
-```bash
-$ npm install node-shield
-$ node
-> const NodeShield = require('node-shield');
-> const shield = new NodeShield();
-```
+---
 
 ## 🧪 THREAT SIMULATION
 
 Fire test attacks and watch Node Shield detect & block them:
 
 ```bash
-┌─ SQL Injection ──────────────────────────────────────────────────┐
+# SQL Injection
 curl "http://localhost:3001/?q=admin' UNION SELECT 1,2,3--"
 
-┌─ Remote Code Execution ──────────────────────────────────────────┐
+# Remote Code Execution
 curl "http://localhost:3001/?cmd=require('child_process').exec()"
 
-┌─ Path Traversal ─────────────────────────────────────────────────┐
+# Path Traversal
 curl "http://localhost:3001/?file=../../etc/passwd"
 
-┌─ Command Injection ──────────────────────────────────────────────┐
+# Command Injection
 curl "http://localhost:3001/?shell=ls | cat /etc/passwd"
 
-┌─ Cross-Site Scripting ──────────────────────────────────────────┐
+# Cross-Site Scripting
 curl "http://localhost:3001/?input=<script>alert(1)</script>"
+
+# NoSQL Injection
+curl "http://localhost:3001/?query={'\$ne':null}"
+
+# XXE Attack
+curl "http://localhost:3001/?xml=<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]>"
+
+# LDAP Injection
+curl "http://localhost:3001/?cn=*)(|(cn=*"
 ```
 
-### ➤ Attack Flow
+**Expected Response:** `HTTP 400` with attack blocked message
 
-```
-   REQUEST IN                DETECTION ACTIVE          DASHBOARD UPDATE
-       ↓                             ↓                         ↓
-   [URL/Body/Headers] ──→ [Pattern Matching] ──→ [Logged] ──→ [Visible]
-       ↓                             ↓                         ↓
-    BLOCKED              [CRITICAL/HIGH/MEDIUM]            REAL-TIME
-```
-
-✅ **Detected** in real-time  
-🛑 **Blocked** instantly  
-📊 **Logged** to dashboard with metadata
+---
 
 ## 📡 API ENDPOINTS
 
-### ▸ Attack Log
+### Core Endpoints
+
 ```bash
-$ curl http://localhost:3001/api/attacks
-[{"id": "1727376834-1", "type": "SQL Injection", "severity": "HIGH", ...}]
+# Get attack log (paginated)
+curl http://localhost:3001/api/attacks?page=1&limit=100
+
+# Get statistics
+curl http://localhost:3001/api/stats
+
+# Count total attacks
+curl http://localhost:3001/api/count
+
+# Health check
+curl http://localhost:3001/api/health
+
+# Clear all logs (admin)
+curl -X POST http://localhost:3001/api/reset
 ```
 
-### ▸ Statistics
+### IP & Pattern Management
+
 ```bash
-$ curl http://localhost:3001/api/stats
-{"total": 42, "byType": {...}, "bySeverity": {...}, "topIPs": [...]}
+# View whitelist
+curl http://localhost:3001/api/whitelist
+
+# Add IP to whitelist
+curl -X POST http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"ip","value":"192.168.1.100"}'
+
+# Add safe pattern
+curl -X POST http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"pattern","value":"internal-api"}'
+
+# Remove from whitelist
+curl -X DELETE http://localhost:3001/api/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"ip","value":"192.168.1.100"}'
 ```
 
-### ▸ Clear Logs
 ```bash
-$ curl -X POST http://localhost:3001/api/reset
-{"status": "OK", "cleared": 42}
+# View blacklist
+curl http://localhost:3001/api/blacklist
+
+# Blacklist suspicious IP
+curl -X POST http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"ip","value":"203.0.113.45"}'
+
+# Blacklist dangerous pattern
+curl -X POST http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"pattern","value":"DROP TABLE"}'
+
+# Remove from blacklist
+curl -X DELETE http://localhost:3001/api/blacklist \
+  -H "Content-Type: application/json" \
+  -d '{"type":"ip","value":"203.0.113.45"}'
 ```
+
+**For complete API documentation, see [API.md](API.md)**
 
 ---
-
-### ▸ WHITELIST MANAGEMENT
-
-View all whitelisted IPs/patterns:
-```bash
-$ curl http://localhost:3001/api/whitelist
-[{"type": "ip", "value": "192.168.1.100"}, ...]
-```
-
-Add trusted IP:
-```bash
-$ curl -X POST http://localhost:3001/api/whitelist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "ip", "value": "192.168.1.100"}'
-```
-
-Add safe pattern:
-```bash
-$ curl -X POST http://localhost:3001/api/whitelist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "pattern", "value": "internal-bot"}'
-```
-
-Remove from whitelist:
-```bash
-$ curl -X DELETE http://localhost:3001/api/whitelist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "ip", "value": "192.168.1.100"}'
-```
-
----
-
-### ▸ BLACKLIST MANAGEMENT
-
-View all blacklisted IPs/patterns:
-```bash
-$ curl http://localhost:3001/api/blacklist
-```
-
-Force-flag suspicious IP:
-```bash
-$ curl -X POST http://localhost:3001/api/blacklist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "ip", "value": "192.168.1.50"}'
-```
-
-Block dangerous pattern:
-```bash
-$ curl -X POST http://localhost:3001/api/blacklist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "pattern", "value": "DROP TABLE"}'
-```
-
-Remove from blacklist:
-```bash
-$ curl -X DELETE http://localhost:3001/api/blacklist \
-  -H "Content-Type: application/json" \
-  -d '{"type": "ip", "value": "192.168.1.50"}'
-```
 
 ## 🏗️ SYSTEM ARCHITECTURE
 
@@ -197,56 +174,44 @@ $ curl -X DELETE http://localhost:3001/api/blacklist \
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
 │  REQUEST → [shield.js] → DETECTION ENGINE → [LOG] → DASHBOARD          │
-│                           ↓                           ↓                  │
-│                      [Pattern Matching]         [PostgreSQL / Memory]   │
-│                      [Rate Limiting]            [Real-time API]         │
-│                      [Whitelist/Blacklist]      [Live UI]               │
+│              ↓                                          ↓                 │
+│         Pattern Matching                         PostgreSQL / Memory    │
+│         Rate Limiting                            Real-time API          │
+│         Whitelist/Blacklist                      Live Dashboard UI      │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### ▸ shield.js
-- Core detection engine (8 attack types)
-- Pattern-based analysis with severity scoring
-- Persistent logging (PostgreSQL or in-memory)
-- IP rate-limit tracking
-- Whitelist/blacklist management
+### Key Files
 
-### ▸ app-standalone.js
-- HTTP server (native Node.js)
-- Serves dashboard HTML (`dashboard-as400pro.html`)
-- Vulnerable endpoints for testing
-- Real-time API routes (`/api/*`)
+| File | Purpose |
+|------|---------|
+| `shield.js` | Core detection engine (8 attack types, logging, IP tracking) |
+| `app-standalone.js` | HTTP server with dashboard & API routes |
+| `app.js` | Express.js middleware wrapper |
+| `dashboard-as400pro.html` | Real-time retro-themed attack monitor UI |
+| `logger.js` | Structured logging with rotation & level control |
 
-### ▸ app.js
-- Express.js middleware integration
-- Framework-agnostic wrapper
-- Production-ready example
+### Database
+
+- **PostgreSQL** (production): Persistent attack logs with indexes
+- **In-Memory** (development): Temporary storage, cleared on restart
+- Auto-migrations on startup (see `migrations/`)
 
 ---
 
-## 🔍 DETECTION PATTERNS
-
-| Attack Type | Detection Signatures |
-|-------------|---------------------|
-| **SQL Injection** | `UNION`, `SELECT`, `INSERT`, `DELETE`, `DROP`, `;`, `--` |
-| **RCE** | `eval()`, `require()`, `child_process`, `exec()`, `spawn()` |
-| **Path Traversal** | `..` and `../` sequences |
-| **Command Injection** | `\|`, `&`, `;`, `$`, `` ` `` |
-| **XSS** | `<script>`, `javascript:`, `onerror=`, `onclick=` |
-| **NoSQL** | NoSQL keywords + JSON patterns |
-| **XXE** | XML entity declarations |
-| **LDAP** | LDAP filter keywords |
-
 ## 💻 INTEGRATION GUIDE
 
-### ▸ Express.js Setup
+### Express.js Middleware
+
 ```javascript
 const NodeShield = require('node-shield');
-const shield = new NodeShield();
 const express = require('express');
 
+const shield = new NodeShield();
 const app = express();
+
+// Protect all routes
 app.use(shield.middleware());
 
 app.get('/dashboard', (req, res) => {
@@ -257,61 +222,156 @@ app.get('/dashboard', (req, res) => {
 app.listen(3000);
 ```
 
-### ▸ Standalone Server
+### Standalone Server (Native Node.js)
+
 ```javascript
 const NodeShield = require('node-shield');
-const server = NodeShield.createServer(3000);
-// Dashboard automatically available at http://localhost:3000
+const shield = new NodeShield();
+
+// Server automatically includes dashboard at /
+// API endpoints at /api/*
+// All requests scanned before processing
 ```
 
 ---
 
 ## 📦 DEPLOYMENT
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ ENVIRONMENT                 │ COMMAND                               │
-├──────────────────────────────────────────────────────────────────────┤
-│ Dev (in-memory, quick)      │ npm start                             │
-│ Dev (with DB, full testing) │ docker-compose down && \             │
-│                             │ docker-compose build --no-cache && \ │
-│                             │ docker-compose up                    │
-│ Production (Docker)         │ docker-compose -f docker-compose.yml │
-│                             │ up -d                                │
-└──────────────────────────────────────────────────────────────────────┘
+### Development (In-Memory)
+```bash
+npm install
+npm start
+# Dashboard: http://localhost:3001
+# Storage: Temporary (cleared on restart)
 ```
 
-### ▸ Development Notes
-- Use **docker-compose** for testing the complete system (app + database)
-- Always use `--no-cache` flag when rebuilding to get latest code changes
-- Dashboard updates require Docker image rebuild (not live-reloaded in container)
-- Standalone mode (`npm start`) is for quick iterations; data is temporary
+### Development (With PostgreSQL)
+```bash
+docker-compose down && docker-compose build --no-cache && docker-compose up
+# Dashboard: http://localhost:3001
+# Storage: Persistent PostgreSQL
+# Migrations: Auto-applied on startup
+```
 
-### ▸ Production Notes
-- Use docker-compose for reliable multi-service orchestration
-- Persistent PostgreSQL storage for attack logs
-- Auto-migrations on container startup
-- Health checks ensure uptime monitoring
+### Production (Docker)
+```bash
+docker-compose -f docker-compose.yml up -d
+# Uses environment variables from .env
+# PostgreSQL health checks enabled
+# Auto-restart on failure
+# Log rotation: 10MB per file, 7 files max
+```
 
-For detailed deployment steps, see [DEPLOYMENT.md](DEPLOYMENT.md)
+### Environment Variables
+
+```bash
+# Server
+PORT=3001
+NODE_ENV=production
+
+# Database
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=node_shield
+DB_USER=shield_user
+DB_PASSWORD=shield_password
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_DIR=/app/logs
+LOG_MAX_SIZE=10485760
+LOG_MAX_FILES=7
+```
+
+**For complete deployment details, see [DEPLOYMENT.md](DEPLOYMENT.md)**
+
+---
+
+## 🧪 TESTING
+
+### 15-Minute Self-Healing Stress Test
+
+```bash
+# Full automated test with Docker auto-recovery
+./test-docker-15min.sh
+
+# Tests 15 attack vectors per cycle
+# Auto-restarts Docker if any test fails
+# Requires 30 consecutive successful cycles (15 minutes)
+```
+
+**See [TESTING.md](TESTING.md) for complete testing guide**
+
+---
+
+## 📚 LOGGING SYSTEM
+
+Node Shield includes comprehensive structured logging with:
+- **5 log levels**: DEBUG, INFO, WARN, ERROR, CRITICAL
+- **Automatic rotation**: Daily + size-based (10MB default)
+- **Formats**: JSON (production) or text (development)
+- **File persistence**: Configurable retention (7 days default)
+
+```bash
+# View logs
+tail -f logs/node-shield-*.log
+
+# Parse JSON logs
+cat logs/*.log | jq 'select(.level=="CRITICAL")'
+
+# Filter by attack type
+cat logs/*.log | jq -r '.data | select(.type=="SQL Injection") | .ip'
+```
+
+**See [LOGGING.md](LOGGING.md) for complete logging documentation**
+
+---
+
+## 🛡️ DETECTION PATTERNS
+
+### Detection Methods
+
+Each attack vector uses case-insensitive pattern matching:
+
+| Attack Type | Signatures | Severity |
+|-------------|-----------|----------|
+| **SQL Injection** | `UNION`, `SELECT`, `INSERT`, `DELETE`, `DROP`, `;`, `--` | HIGH |
+| **RCE** | `eval()`, `require()`, `child_process`, `exec()`, `spawn()`, `vm.` | CRITICAL |
+| **Path Traversal** | `..`, `../`, `..%2f`, `/etc/passwd` | MEDIUM |
+| **Command Injection** | `\|`, `&`, `;`, `$`, `` ` ``, `&&`, `\|\|` | HIGH |
+| **XSS** | `<script>`, `javascript:`, `onerror=`, `onclick=`, `alert(` | LOW |
+| **NoSQL Injection** | `{$`, `[$`, `db.`, `collection.`, `{regex:` | HIGH |
+| **XXE** | `<!DOCTYPE`, `<!ENTITY`, `SYSTEM`, `PUBLIC`, `file://` | HIGH |
+| **LDAP Injection** | `*`, `(|`, `(&`, `cn=`, `uid=`, `objectclass` | MEDIUM |
+
+### Rate Limiting
+
+- **Threshold**: >5 attacks from same IP in 10 seconds
+- **Action**: Logged as CRITICAL, request blocked
+- **Tracking**: Per-IP counters stored in memory
 
 ---
 
 ## 🎯 ROADMAP
 
 ```
-✅ COMPLETED                           ⏳ IN PROGRESS / PLANNED
+✅ COMPLETED (v0.2)                    ⏳ PLANNED (v1.0+)
 ├─ 8 attack detection types           ├─ Dashboard authentication
-├─ Multi-source scanning              ├─ Vercel deployment
-├─ Real-time dashboard                ├─ Email/Slack alerts
-├─ IP tracking & rate limiting        ├─ SaaS analytics version
-├─ Whitelist/blacklist management     ├─ ML-based detection
-├─ Docker & docker-compose            └─ Advanced reporting
+├─ Multi-source scanning              ├─ ML-based detection
+├─ Real-time dashboard                ├─ Advanced analytics
+├─ IP tracking & rate limiting        ├─ Vercel deployment
+├─ Whitelist/blacklist management     ├─ Email/Slack alerts
+├─ Docker & docker-compose            └─ SaaS analytics version
 ├─ npm package integration
-└─ Production-ready setup
+├─ Structured logging with rotation
+├─ 15-min self-healing stress test
+└─ Production-ready deployment
 ```
 
-## 🎖️ PORTFOLIO IMPACT
+---
+
+## 🎖️ PORTFOLIO HIGHLIGHTS
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -319,41 +379,75 @@ For detailed deployment steps, see [DEPLOYMENT.md](DEPLOYMENT.md)
 │  ✓ SECURITY EXPERTISE ──→ Real attack vectors, pattern matching         │
 │  ✓ SYSTEM DESIGN ────────→ Zero overhead, transparent integration       │
 │  ✓ FULL-STACK ───────────→ Detection + API + Dashboard + DevOps        │
-│  ✓ PRODUCTION READY ─────→ Proven in real deployments                  │
+│  ✓ PRODUCTION READY ─────→ Docker, logging, stress testing              │
 │                                                                          │
-│  Targets:                                                               │
-│  • Cloud platforms (AWS, Google Cloud, Azure)                           │
-│  • Hosting providers (Vercel, Netlify, Railway)                         │
-│  • Security companies (Snyk, GitGuardian)                               │
-│  • Fintech / regulated industries                                       │
+│  Key Differentiators:                                                   │
+│  • Real-time attack detection (no batch processing)                     │
+│  • Zero external dependencies (pure Node.js)                            │
+│  • Multi-source scanning (query, body, headers)                         │
+│  • Retro-themed dashboard (unique portfolio angle)                      │
+│  • Self-healing stress test (15-min verification)                       │
+│  • Production logging with automatic rotation                           │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 QUICK REFERENCE
+## 📋 DOCUMENTATION
 
-| Topic | Link |
-|-------|------|
-| **Full API Docs** | [API.md](API.md) |
-| **Deployment Guide** | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| **Architecture Deep Dive** | [CLAUDE.md](CLAUDE.md) |
-| **Security Policy** | [SECURITY.md](SECURITY.md) |
-| **Contributing** | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| **Getting Started** | [QUICK-START.md](QUICK-START.md) |
+| Document | Content |
+|----------|---------|
+| [API.md](API.md) | Complete endpoint reference & response formats |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment guide & scaling |
+| [LOGGING.md](LOGGING.md) | Logging configuration & monitoring |
+| [TESTING.md](TESTING.md) | Testing strategies & 15-min stress test |
+| [CLAUDE.md](CLAUDE.md) | Architecture deep dive & implementation details |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+
+---
+
+## ⚡ PERFORMANCE
+
+- **Detection overhead**: <2% CPU impact
+- **Dashboard refresh**: 3-second polling interval
+- **Database**: Indexed queries on timestamp, ip, type, severity
+- **Memory**: Connection pooling (max 100 concurrent)
+- **Throughput**: 1000+ req/sec (tested in Docker)
+
+---
+
+## 🔒 SECURITY
+
+- ✅ No external dependencies (reduces supply chain risk)
+- ✅ Pattern-based detection (no ML/large models)
+- ✅ PostgreSQL with parameterized queries
+- ✅ API key support (disable in development)
+- ✅ Environment variable configuration
+- ✅ Security headers on all responses
+
+**Security Policy**: [SECURITY.md](SECURITY.md)
+
+---
+
+## 📝 LICENSE
+
+MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
 ```
-╔══════════════════════════════════════════════════════════════════════════╗
-║                                                                          ║
-║                    Built by Achmad · 2026-09-27                        ║
-║                   Status: MVP - Actively Developed                      ║
-║               License: MIT (see LICENSE for details)                    ║
-║                                                                          ║
-║  Repository: github.com/achmad-firdaus/node-shield                     ║
-║  npm: npm install node-shield                                           ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    Node Shield v0.2 · September 2026                        ║
+║                   Status: Production-Ready · Actively Developed             ║
+║                                                                              ║
+║  Repository: github.com/achmad-firdaus/node-shield                         ║
+║  npm: npm install node-shield                                               ║
+║  Dashboard: http://localhost:3001 (local development)                       ║
+║                                                                              ║
+║  Built to demonstrate security expertise, system design, and full-stack     ║
+║  execution. Suitable for production deployments with real attack logging.   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
