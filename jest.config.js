@@ -27,9 +27,9 @@ module.exports = {
     '/dist/',
     '/coverage/',
     'config\\.setup\\.js$',
-    'test\\.js$',
-    'test-enhanced-scanning\\.js$',
-    'test-docker-15min\\.sh$',
+    '^test\\.js$',
+    '^test-enhanced-scanning\\.js$',
+    '^test-docker-15min\\.sh$',
   ],
   setupFilesAfterEnv: ['<rootDir>/__tests__/config.setup.js'],
 };
