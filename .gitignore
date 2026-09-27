@@ -51,3 +51,12 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# Claude Code & development tools
+.claude/
+.playwright-mcp/
+
+# Generated documentation & screenshots
+PRODUCTION-*.md
+QUICK-START.md
+*.png
