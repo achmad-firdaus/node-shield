@@ -1,7 +1,9 @@
 const { Pool } = require('pg');
+const Logger = require('./logger');
 
 class NodeShield {
-  constructor() {
+  constructor(logger = null) {
+    this.logger = logger || new Logger({ serviceName: 'shield' });
     this.ipRates = {};
     this.attackCounter = 0;
     this.useInMemoryDB = !process.env.DB_HOST;
@@ -26,14 +28,14 @@ class NodeShield {
       });
 
       this.pool.on('error', (err) => {
-        console.error('[DB ERROR]', err.message);
+        this.logger.error('Database connection error', { message: err.message }, err);
         if (!this.useInMemoryDB) {
-          console.log('[SHIELD] Switching to in-memory storage for testing');
+          this.logger.info('Switching to in-memory storage for testing');
           this.useInMemoryDB = true;
         }
       });
     } else {
-      console.log('[SHIELD] Using in-memory storage (no DB_HOST configured)');
+      this.logger.info('Using in-memory storage (no DB_HOST configured)');
     }
   }
 
@@ -61,59 +63,59 @@ class NodeShield {
 
   addIPToWhitelist(ip) {
     this.whitelistIPs.add(ip);
-    console.log(`[SHIELD] IP ${ip} added to whitelist`);
+    this.logger.info('IP added to whitelist', { ip });
   }
 
   removeIPFromWhitelist(ip) {
     this.whitelistIPs.delete(ip);
-    console.log(`[SHIELD] IP ${ip} removed from whitelist`);
+    this.logger.info('IP removed from whitelist', { ip });
   }
 
   addIPToBlacklist(ip) {
     this.blacklistIPs.add(ip);
-    console.log(`[SHIELD] IP ${ip} added to blacklist`);
+    this.logger.warn('IP added to blacklist', { ip });
   }
 
   removeIPFromBlacklist(ip) {
     this.blacklistIPs.delete(ip);
-    console.log(`[SHIELD] IP ${ip} removed from blacklist`);
+    this.logger.info('IP removed from blacklist', { ip });
   }
 
   addPatternToWhitelist(pattern) {
     this.whitelistPatterns.add(pattern);
-    console.log(`[SHIELD] Pattern "${pattern}" added to whitelist`);
+    this.logger.info('Pattern added to whitelist', { pattern });
   }
 
   removePatternFromWhitelist(pattern) {
     this.whitelistPatterns.delete(pattern);
-    console.log(`[SHIELD] Pattern "${pattern}" removed from whitelist`);
+    this.logger.info('Pattern removed from whitelist', { pattern });
   }
 
   addPatternToBlacklist(pattern) {
     this.blacklistPatterns.add(pattern);
-    console.log(`[SHIELD] Pattern "${pattern}" added to blacklist`);
+    this.logger.warn('Pattern added to blacklist', { pattern });
   }
 
   removePatternFromBlacklist(pattern) {
     this.blacklistPatterns.delete(pattern);
-    console.log(`[SHIELD] Pattern "${pattern}" removed from blacklist`);
+    this.logger.info('Pattern removed from blacklist', { pattern });
   }
 
   logAttack(type, endpoint, payload, details, ip = '0.0.0.0') {
     // Check whitelist/blacklist before logging
     if (this.isIPWhitelisted(ip)) {
-      console.log(`[SHIELD] [WHITELISTED] Skipped ${type} from IP ${ip} (whitelisted)`);
+      this.logger.debug('Attack skipped (IP whitelisted)', { type, ip });
       return false;
     }
 
     if (this.isIPBlacklisted(ip)) {
-      console.log(`[SHIELD] [BLACKLISTED] Blocked ${type} from IP ${ip} (blacklisted IP)`);
+      this.logger.warn('Blocked attack from blacklisted IP', { type, ip });
       this.attackCounter++;
     } else if (this.isPayloadWhitelisted(payload)) {
-      console.log(`[SHIELD] [WHITELISTED] Skipped ${type} from ${ip} (payload whitelisted)`);
+      this.logger.debug('Attack skipped (payload whitelisted)', { type, ip });
       return false;
     } else if (this.isPayloadBlacklisted(payload)) {
-      console.log(`[SHIELD] [EXTRA DANGEROUS] Blocked ${type} from ${ip} (extra blacklist pattern matched)`);
+      this.logger.critical('Blocked extra dangerous attack (pattern matched)', { type, ip });
       this.attackCounter++;
     } else {
       this.attackCounter++;
@@ -138,7 +140,7 @@ class NodeShield {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [id, timestamp, type, endpoint, payloadStr, ip, true, severity, JSON.stringify(details)]
       ).catch(err => {
-        console.error('[DB INSERT ERROR]', err.message);
+        this.logger.error('Database insert error', { type, ip }, err);
         this.useInMemoryDB = true;
         this.inMemoryAttacks.push(attack);
       });
@@ -156,9 +158,10 @@ class NodeShield {
     // Check for rate limit (>5 attacks in 10 sec = brute force)
     const timeSinceFirst = Date.now() - this.ipRates[ip].firstSeen;
     if (timeSinceFirst < 10000 && this.ipRates[ip].count > 5) {
-      console.log(`[SHIELD] [CRITICAL] Blocked ${type} from ${ip} (RATE LIMITED)`);
+      this.logger.critical('Rate limited attack detected', { type, ip, count: this.ipRates[ip].count });
     } else {
-      console.log(`[SHIELD] [${severity}] Blocked ${type} from ${ip}`);
+      const logMethod = severity === 'CRITICAL' ? 'critical' : severity === 'HIGH' ? 'warn' : 'info';
+      this.logger[logMethod](`Attack detected: ${type}`, { type, ip, severity, endpoint });
     }
 
     return true;
@@ -311,7 +314,7 @@ class NodeShield {
         severity: row.severity
       }));
     } catch (err) {
-      console.error('[GET ATTACKS ERROR]', err);
+      this.logger.error('Failed to fetch attacks', { page, limit }, err);
       this.useInMemoryDB = true;
       return this.getAttacks(page, limit);
     }
@@ -325,7 +328,7 @@ class NodeShield {
       const result = await this.pool.query('SELECT COUNT(*) as count FROM attacks');
       return parseInt(result.rows[0].count);
     } catch (err) {
-      console.error('[GET TOTAL ERROR]', err);
+      this.logger.error('Failed to get total attacks count', {}, err);
       this.useInMemoryDB = true;
       return this.inMemoryAttacks.length;
     }
@@ -394,10 +397,9 @@ class NodeShield {
 
       return stats;
     } catch (err) {
-      console.error('[GET STATS ERROR]', err);
+      this.logger.error('Failed to get stats', {}, err);
       this.useInMemoryDB = true;
       return this.getStats();
-      return { total: 0, byType: {}, byIP: {}, topAttackers: [], rateLimit: 0, last24h: 0 };
     }
   }
 

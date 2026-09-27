@@ -3,9 +3,20 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const Logger = require('./logger');
 const NodeShield = require('./shield');
 
-const shield = new NodeShield();
+// Initialize logger
+const logger = new Logger({
+  logDir: process.env.LOG_DIR || './logs',
+  logLevel: process.env.LOG_LEVEL || 'INFO',
+  logFormat: process.env.LOG_FORMAT || 'json',
+  enableFile: true,
+  enableConsole: true,
+  serviceName: 'node-shield'
+});
+
+const shield = new NodeShield(logger);
 const mockDatabase = {
   users: [
     { id: 1, username: 'admin', password: 'secret123' },
@@ -23,26 +34,9 @@ const config = {
   enableAuth: process.env.ENABLE_AUTH !== 'false',
   corsEnabled: process.env.CORS_ENABLED === 'true',
   corsOrigin: process.env.CORS_ORIGIN || 'localhost,127.0.0.1',
-  logFormat: process.env.LOG_FORMAT || 'text',
+  logFormat: process.env.LOG_FORMAT || 'json',
   verbose: process.env.VERBOSE_LOGGING === 'true'
 };
-
-// Simple structured logger
-function log(level, message, data = {}) {
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...(config.verbose && data)
-  };
-
-  if (config.logFormat === 'json') {
-    console.log(JSON.stringify(logEntry));
-  } else {
-    console.log(`[${timestamp}] [${level}] ${message}${config.verbose && Object.keys(data).length ? ' ' + JSON.stringify(data) : ''}`);
-  }
-}
 
 function getClientIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -103,7 +97,7 @@ function parseBodyData(req) {
           resolve({ raw: body });
         }
       } catch (err) {
-        log('warn', 'Body parse error', { error: err.message });
+        logger.warn('Body parse error', { error: err.message }, err);
         resolve(null);
       }
     });
@@ -173,7 +167,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
     // Log incoming request
-    log('info', `${req.method} ${pathname}`, { ip: clientIP, userAgent: req.headers['user-agent'] });
+    logger.debug(`${req.method} ${pathname}`, { ip: clientIP, userAgent: req.headers['user-agent'] });
 
     // Skip attack detection for dashboard and API routes (User-Agent causes false positives)
     const isDashboard = pathname === '/' || pathname === '/dashboard';
@@ -205,7 +199,7 @@ const server = http.createServer(async (req, res) => {
           return;
         }
       } catch (err) {
-        console.error('[BODY PARSE ERROR]', err.message);
+        logger.error('Failed to parse request body', {}, err);
       }
     }
 
@@ -218,7 +212,7 @@ const server = http.createServer(async (req, res) => {
       try {
         dashboardHTML = fs.readFileSync(path.join(__dirname, 'dashboard-as400pro.html'), 'utf8');
       } catch (err) {
-        console.error('[DASHBOARD ERROR]', err.message);
+        logger.error('Failed to load dashboard', {}, err);
         res.writeHead(500);
         res.end(JSON.stringify({ error: 'Dashboard not found' }));
         return;
@@ -455,12 +449,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.addIPToWhitelist(value);
-        log('info', `IP added to whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to whitelist` }));
       } else if (type === 'pattern') {
         shield.addPatternToWhitelist(value);
-        log('info', `Pattern added to whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to whitelist` }));
       } else {
@@ -482,12 +474,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.removeIPFromWhitelist(value);
-        log('info', `IP removed from whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} removed from whitelist` }));
       } else if (type === 'pattern') {
         shield.removePatternFromWhitelist(value);
-        log('info', `Pattern removed from whitelist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" removed from whitelist` }));
       } else {
@@ -524,12 +514,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.addIPToBlacklist(value);
-        log('warn', `IP added to blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to blacklist` }));
       } else if (type === 'pattern') {
         shield.addPatternToBlacklist(value);
-        log('warn', `Pattern added to blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to blacklist` }));
       } else {
@@ -551,12 +539,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (type === 'ip') {
         shield.removeIPFromBlacklist(value);
-        log('info', `IP removed from blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} removed from blacklist` }));
       } else if (type === 'pattern') {
         shield.removePatternFromBlacklist(value);
-        log('info', `Pattern removed from blacklist: ${value}`);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" removed from blacklist` }));
       } else {
@@ -572,7 +558,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     shield.inMemoryAttacks = [];
-    log('warn', 'Attacks log reset by admin');
+    logger.warn('Attacks log reset by admin');
     res.writeHead(200);
     res.end(JSON.stringify({ message: 'Attacks log reset' }));
   } else if (pathname === '/search') {
@@ -591,7 +577,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Not found' }));
   }
   } catch (err) {
-    console.error('[ERROR]', err.message);
+    logger.error('Request handler error', {}, err);
     if (!res.headersSent) {
       res.writeHead(500);
       res.end(JSON.stringify({ error: 'Internal server error' }));
@@ -605,43 +591,43 @@ function generateAPIKey() {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  log('info', 'SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing HTTP server');
   server.close(() => {
-    log('info', 'HTTP server closed');
+    logger.info('HTTP server closed');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  log('info', 'SIGINT signal received: closing HTTP server');
+  logger.info('SIGINT signal received: closing HTTP server');
   server.close(() => {
-    log('info', 'HTTP server closed');
+    logger.info('HTTP server closed');
     process.exit(0);
   });
 });
 
 server.listen(config.port, () => {
-  log('info', `🛡️  Node Shield is running on http://localhost:${config.port}`);
-  log('info', `📊 Dashboard: http://localhost:${config.port}`);
+  logger.info(`🛡️  Node Shield is running on http://localhost:${config.port}`);
+  logger.info(`📊 Dashboard: http://localhost:${config.port}`);
 
   if (config.enableAuth && config.apiKey === 'development-key-not-for-production' && config.nodeEnv === 'production') {
-    log('warn', '⚠️  SECURITY WARNING: Using default API key. Set API_KEY environment variable!');
-    log('warn', `    Generate one: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`);
+    logger.warn('⚠️  SECURITY WARNING: Using default API key. Set API_KEY environment variable!');
+    logger.warn(`Generate one: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`);
   } else if (config.enableAuth) {
-    log('info', `🔐 API Authentication: ENABLED (API_KEY=${config.apiKey.substring(0, 8)}...)`);
+    logger.info(`🔐 API Authentication: ENABLED (API_KEY=${config.apiKey.substring(0, 8)}...)`);
   }
 
-  log('info', `📝 Configuration: NODE_ENV=${config.nodeEnv}, CORS=${config.corsEnabled ? 'enabled' : 'disabled'}`);
-  log('info', '');
-  log('info', 'Try these attack scenarios:');
-  log('info', `  SQL Injection: curl "http://localhost:${config.port}/search?q=admin' UNION SELECT 1,2,3--"`);
-  log('info', `  RCE: curl "http://localhost:${config.port}/execute?cmd=require('child_process').exec('ls')"`);
-  log('info', `  Path Traversal: curl "http://localhost:${config.port}/file?file=../../etc/passwd"`);
-  log('info', '');
-  log('info', 'Protected endpoints (require API key):');
-  log('info', `  POST /api/reset -H "X-API-Key: YOUR_API_KEY"`);
-  log('info', `  POST /api/whitelist -H "X-API-Key: YOUR_API_KEY"`);
-  log('info', `  POST /api/blacklist -H "X-API-Key: YOUR_API_KEY"`);
-  log('info', '');
-  log('info', 'Press Ctrl+C to stop');
+  logger.info(`📝 Configuration: NODE_ENV=${config.nodeEnv}, CORS=${config.corsEnabled ? 'enabled' : 'disabled'}`);
+  logger.info('');
+  logger.info('Try these attack scenarios:');
+  logger.info(`  SQL Injection: curl "http://localhost:${config.port}/search?q=admin' UNION SELECT 1,2,3--"`);
+  logger.info(`  RCE: curl "http://localhost:${config.port}/execute?cmd=require('child_process').exec('ls')"`);
+  logger.info(`  Path Traversal: curl "http://localhost:${config.port}/file?file=../../etc/passwd"`);
+  logger.info('');
+  logger.info('Protected endpoints (require API key):');
+  logger.info(`  POST /api/reset -H "X-API-Key: YOUR_API_KEY"`);
+  logger.info(`  POST /api/whitelist -H "X-API-Key: YOUR_API_KEY"`);
+  logger.info(`  POST /api/blacklist -H "X-API-Key: YOUR_API_KEY"`);
+  logger.info('');
+  logger.info('Press Ctrl+C to stop');
 });

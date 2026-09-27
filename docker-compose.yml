@@ -40,14 +40,19 @@ services:
       PORT: ${PORT:-3001}
       API_KEY: ${API_KEY:-your-secure-api-key-here-min-32-chars}
       ENABLE_AUTH: ${ENABLE_AUTH:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMAT: ${LOG_FORMAT:-json}
-      VERBOSE_LOGGING: ${VERBOSE_LOGGING:-false}
+      LOG_DIR: ${LOG_DIR:-/app/logs}
+      LOG_MAX_SIZE: ${LOG_MAX_SIZE:-10485760}
+      LOG_MAX_FILES: ${LOG_MAX_FILES:-7}
     command: sh -c "npm run migrate && npm start"
     ports:
       - "${PORT:-3001}:${PORT:-3001}"
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
     networks:
       - shield-network
     restart: unless-stopped

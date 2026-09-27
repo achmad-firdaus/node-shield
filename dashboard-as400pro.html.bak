@@ -21,11 +21,12 @@
 
     body {
       background: linear-gradient(135deg, #0a1428 0%, #1a1f3a 100%);
-      color: #00d4ff;
+      color: #66d4ff;
       font-family: 'IBM Plex Mono', 'Courier New', monospace;
-      font-size: 13px;
+      font-size: 16px;
       line-height: 1.6;
       padding: 0;
+      letter-spacing: 0.2px;
     }
 
     .screen {
@@ -39,35 +40,38 @@
     /* Header */
     .header {
       background: linear-gradient(90deg, #0d2b45 0%, #1a4d7a 100%);
-      border: 2px solid #00d4ff;
-      padding: 10px 12px;
+      border: 2px solid #66d4ff;
+      padding: 12px 14px;
       text-align: center;
-      font-size: 15px;
+      font-size: 19px;
       font-weight: 700;
-      color: #00ff88;
-      text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+      color: #66ff88;
+      text-shadow: 0 0 10px rgba(102, 212, 255, 0.3);
+      box-shadow: 0 0 20px rgba(102, 212, 255, 0.2);
       flex-shrink: 0;
+      line-height: 1.5;
     }
 
     .header-line {
       margin: 0;
-      letter-spacing: 1px;
-      font-size: 16px;
+      letter-spacing: 0.5px;
+      font-size: 19px;
+      font-weight: 700;
     }
 
     .header-sub {
-      font-size: 13px;
-      color: #00d4ff;
-      margin-top: 3px;
-      opacity: 0.8;
+      font-size: 15px;
+      color: #66d4ff;
+      margin-top: 4px;
+      opacity: 0.85;
+      letter-spacing: 0.2px;
     }
 
     /* Main Container */
     .container {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr auto;
+      grid-template-columns: clamp(200px, 30%, 400px) 1fr;
+      grid-template-rows: 1fr 0.35fr;
       gap: 4px;
       flex: 1;
       min-height: 0;
@@ -90,26 +94,37 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      height: 100%;
     }
 
     .right-panel {
       grid-column: 1 / -1;
       grid-row: 2;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 4px;
-      min-height: 160px;
-      max-height: 240px;
-      flex-shrink: 0;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      min-height: 0;
+      height: 100%;
+      max-height: 100%;
+      flex: 0.35;
+      overflow: hidden;
+    }
+
+    .right-panel > .panel {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     /* Panels */
     .panel {
       background: linear-gradient(180deg, #0f1f35 0%, #1a2a4a 100%);
-      border: 2px solid #00d4ff;
+      border: 2px solid #66d4ff;
       padding: 10px;
       overflow: visible;
-      box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+      box-shadow: inset 0 0 20px rgba(102, 212, 255, 0.05);
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -123,26 +138,31 @@
     }
 
     .panel-title {
-      background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
+      background: linear-gradient(90deg, #66d4ff 0%, #66ff88 100%);
       color: #0a1428;
-      padding: 8px 10px;
+      padding: 10px 12px;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 19px;
       margin-bottom: 0;
       border-radius: 2px;
       flex-shrink: 0;
-      box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
-      flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(102, 255, 136, 0.2);
       position: sticky;
       top: 0;
       z-index: 10;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+    }
+
+    .right-panel .panel-title {
+      flex-shrink: 0;
     }
 
     /* Sections */
     .section {
       margin-bottom: 8px;
       padding-bottom: 8px;
-      border-bottom: 1px dashed #00d4ff;
+      border-bottom: 1px dashed #66d4ff;
     }
 
     .section:last-child {
@@ -152,11 +172,11 @@
 
     .section-title {
       font-weight: 700;
-      font-size: 13px;
-      color: #00ff88;
+      font-size: 19px;
+      color: #66ff88;
       margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
 
     /* Field Row */
@@ -164,29 +184,29 @@
       display: grid;
       grid-template-columns: 50% 50%;
       gap: 6px;
-      margin: 5px 0;
-      font-size: 13px;
+      margin: 6px 0;
+      font-size: 19px;
     }
 
     .field-label {
       text-align: right;
-      color: #00d4ff;
+      color: #66d4ff;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 19px;
     }
 
     .field-value {
       font-weight: 700;
-      color: #00ff88;
-      font-size: 13px;
+      color: #66ff88;
+      font-size: 19px;
     }
 
     .field-value.critical {
-      color: #ff6b6b;
+      color: #dd8888;
     }
 
     .field-value.warning {
-      color: #ffd93d;
+      color: #ddb366;
     }
 
     /* Metrics Grid */
@@ -199,25 +219,28 @@
 
     .metric-card {
       background: linear-gradient(135deg, #1a3a5a 0%, #0f2a45 100%);
-      border: 1px solid #00ff88;
+      border: 1px solid #66ff88;
       padding: 6px;
       text-align: center;
       border-radius: 2px;
-      box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+      box-shadow: 0 0 10px rgba(102, 255, 136, 0.1);
     }
 
     .metric-number {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      color: #00ff88;
-      line-height: 1;
+      color: #66ff88;
+      line-height: 1.3;
+      letter-spacing: 0.2px;
     }
 
     .metric-label {
-      font-size: 12px;
-      color: #00d4ff;
-      margin-top: 3px;
+      font-size: 19px;
+      color: #66d4ff;
+      margin-top: 4px;
       text-transform: uppercase;
+      letter-spacing: 0.2px;
+      font-weight: 600;
     }
 
     /* Table */
@@ -225,43 +248,99 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      border: 1px solid #00d4ff;
+      border: 1px solid #66d4ff;
       border-radius: 2px;
-      box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.1);
+      box-shadow: inset 0 0 15px rgba(102, 212, 255, 0.05);
       min-height: 100px;
       display: flex;
       flex-direction: column;
       min-width: 0;
+      height: 100%;
+    }
+
+    .right-panel .table-container {
+      min-height: 0;
+      height: 100%;
+    }
+
+    #threat-breakdown-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      flex: 1;
+    }
+
+    #threat-breakdown-content > div {
+      display: flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 10px 14px;
+      flex-shrink: 0;
+      font-size: 19px;
+    }
+
+    #attackers-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      flex: 1;
+    }
+
+    #attackers-content > div {
+      display: flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 10px 14px;
+      flex-shrink: 0;
+      font-size: 19px;
+    }
+
+    #stats-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      flex: 1;
+    }
+
+    #stats-content > div {
+      display: flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 10px 14px;
+      flex-shrink: 0;
+      font-size: 19px;
     }
 
     .table-header {
       background: linear-gradient(90deg, #1a4d7a 0%, #0d2b45 100%);
-      border-bottom: 1px solid #00ff88;
-      padding: 6px 2px;
+      border-bottom: 2px solid #66ff88;
+      padding: 12px 8px;
       display: grid;
       grid-template-columns: 6% 10% 9% 28% 17% 30%;
-      gap: 1px;
+      gap: 2px;
       font-weight: 700;
-      font-size: 12px;
-      color: #00ff88;
+      font-size: 19px;
+      color: #66ff88;
       position: sticky;
       top: 0;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       flex-shrink: 0;
+      line-height: 1.4;
     }
 
     .table-row {
       display: grid;
       grid-template-columns: 6% 10% 9% 28% 17% 30%;
-      gap: 1px;
-      padding: 4px 1px;
-      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-      font-size: 12px;
+      gap: 2px;
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(102, 212, 255, 0.1);
+      font-size: 19px;
       background: transparent;
-      min-height: 20px;
+      min-height: 32px;
       transition: background-color 0.3s ease, opacity 0.3s ease;
       opacity: 1;
+      line-height: 1.5;
     }
 
     .table-row.fade-in {
@@ -306,10 +385,10 @@
     .pagination-controls {
       flex-shrink: 0;
       padding: 8px;
-      background: rgba(0, 212, 255, 0.05);
-      border-top: 1px solid #00d4ff;
-      font-size: 11px;
-      color: #00ff88;
+      background: rgba(102, 212, 255, 0.03);
+      border-top: 1px solid #66d4ff;
+      font-size: 14px;
+      color: #66ff88;
       text-align: center;
     }
 
@@ -326,21 +405,24 @@
     }
 
     .table-cell {
-      color: #00d4ff;
+      color: #66d4ff;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      padding: 0 2px;
+      padding: 0 8px;
+      min-width: 0;
+      font-size: 19px;
+      letter-spacing: 0.1px;
     }
 
     /* Inline Detail Row */
     .attack-detail-row {
       grid-column: 1 / -1;
-      background: rgba(0, 212, 255, 0.05);
-      border: 1px solid rgba(0, 212, 255, 0.2);
-      border-left: 3px solid #00ff88;
+      background: rgba(102, 212, 255, 0.05);
+      border: 1px solid rgba(102, 212, 255, 0.15);
+      border-left: 3px solid #66ff88;
       padding: 8px;
-      font-size: 11px;
+      font-size: 14px;
       line-height: 1.5;
       display: none;
       margin: 2px 0;
@@ -355,7 +437,7 @@
     }
 
     .detail-label {
-      color: #00ff88;
+      color: #66ff88;
       font-weight: 700;
       text-transform: uppercase;
       display: inline-block;
@@ -363,14 +445,14 @@
     }
 
     .detail-value {
-      color: #00d4ff;
+      color: #66d4ff;
       word-break: break-all;
       display: inline;
     }
 
     .detail-payload {
       background: rgba(0, 20, 40, 0.8);
-      border-left: 2px solid #ffd93d;
+      border-left: 2px solid #ddb366;
       padding: 6px;
       margin-top: 4px;
       overflow-x: auto;
@@ -379,43 +461,81 @@
     }
 
     .table-cell.critical {
-      color: #ff6b6b;
+      color: #dd8888;
       font-weight: 700;
     }
 
     .table-cell.warning {
-      color: #ffd93d;
+      color: #ddb366;
       font-weight: 700;
     }
 
     .table-cell.success {
-      color: #00ff88;
+      color: #66ff88;
+    }
+
+    /* Table Column Alignment */
+    .table-row > div:nth-child(1),
+    .table-row > div:nth-child(2),
+    .table-row > div:nth-child(3) {
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .table-row > div:nth-child(4),
+    .table-row > div:nth-child(5) {
+      text-align: left;
+    }
+
+    .table-row > div:nth-child(6) {
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .table-header > div:nth-child(1),
+    .table-header > div:nth-child(2),
+    .table-header > div:nth-child(3) {
+      text-align: center;
+    }
+
+    .table-header > div:nth-child(4),
+    .table-header > div:nth-child(5) {
+      text-align: left;
+    }
+
+    .table-header > div:nth-child(6) {
+      text-align: right;
     }
 
     /* Status Bar */
     .status-bar {
       background: linear-gradient(90deg, #0d2b45 0%, #1a4d7a 100%);
-      border: 1px solid #00d4ff;
-      padding: 6px 8px;
+      border: 2px solid #66d4ff;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 600;
-      color: #00d4ff;
-      height: 28px;
+      color: #66d4ff;
+      height: 32px;
       border-radius: 2px;
-      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+      box-shadow: 0 0 15px rgba(102, 212, 255, 0.2);
       flex-shrink: 0;
+      letter-spacing: 0.2px;
     }
 
     .status-left {
       flex: 1;
+      font-size: 15px;
     }
 
     .status-right {
       text-align: right;
-      color: #00ff88;
+      color: #66ff88;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.1px;
     }
 
     /* Attacker List */
@@ -423,34 +543,34 @@
       display: grid;
       grid-template-columns: 70% 30%;
       gap: 6px;
-      padding: 6px 6px;
-      font-size: 12px;
-      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      padding: 4px 6px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(102, 212, 255, 0.08);
       transition: background-color 0.3s ease;
     }
 
     .attacker-line:nth-child(even) {
-      background: rgba(0, 212, 255, 0.03);
+      background: rgba(102, 212, 255, 0.03);
     }
 
     .attacker-line:hover {
-      background: rgba(0, 255, 136, 0.08);
+      background: rgba(102, 255, 136, 0.08);
     }
 
     .attacker-ip {
       font-weight: 700;
-      color: #00ff88;
+      color: #66ff88;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .attacker-count {
       text-align: right;
       font-weight: 700;
-      color: #ffd93d;
-      font-size: 12px;
+      color: #ddb366;
+      font-size: 13px;
     }
 
     /* Stat Item */
@@ -458,18 +578,18 @@
       display: grid;
       grid-template-columns: 60% 40%;
       gap: 6px;
-      padding: 6px 6px;
-      font-size: 12px;
-      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      padding: 4px 6px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(102, 212, 255, 0.08);
       transition: background-color 0.3s ease;
     }
 
     .stat-item:nth-child(even) {
-      background: rgba(0, 212, 255, 0.03);
+      background: rgba(102, 212, 255, 0.03);
     }
 
     .stat-item:hover {
-      background: rgba(0, 255, 136, 0.08);
+      background: rgba(102, 255, 136, 0.08);
     }
 
     #breakdown-content {
@@ -480,75 +600,371 @@
     }
 
     .stat-label {
-      color: #00d4ff;
+      color: #66d4ff;
       font-weight: 600;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .stat-value {
       text-align: right;
-      color: #00ff88;
+      color: #66ff88;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     /* Scrollbar */
     ::-webkit-scrollbar {
-      width: 12px;
+      width: 10px;
     }
 
     ::-webkit-scrollbar-track {
-      background: rgba(0, 212, 255, 0.1);
+      background: rgba(102, 212, 255, 0.05);
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #00d4ff;
+      background: #66d4ff;
       border-radius: 3px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: #00ff88;
+      background: #66ff88;
+    }
+
+    @media (max-width: 1400px) {
+      .container {
+        grid-template-columns: clamp(180px, 25%, 350px) 1fr;
+        gap: 6px;
+      }
+
+      body {
+        font-size: 16px;
+      }
     }
 
     @media (max-width: 1200px) {
       .container {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
+        padding: 3px;
+        gap: 3px;
       }
 
       .left-panel {
         grid-column: 1;
         grid-row: 1;
+        max-height: 35vh;
       }
 
       .middle-panel {
         grid-column: 1;
         grid-row: 2;
+        max-height: 35vh;
       }
 
       .right-panel {
         grid-column: 1;
         grid-row: 3;
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 4px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 10px;
+        max-height: 280px;
+      }
+
+      .right-panel > .panel {
+        height: 100%;
+        max-height: 100%;
+      }
+
+      .right-panel .panel-title {
+        font-size: 15px;
+        padding: 8px 10px;
+      }
+
+      body {
+        font-size: 15px;
+      }
+
+      .header {
+        padding: 10px;
+        font-size: 17px;
+      }
+
+      .panel-title {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .right-panel {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+        max-height: 360px;
+      }
+
+      body {
+        font-size: 15px;
+      }
+
+      .table-row {
+        font-size: 15px;
+        padding: 5px 3px;
+        min-height: 22px;
+      }
+
+      .table-header {
+        font-size: 15px;
+        padding: 6px 2px;
       }
     }
 
     @media (max-width: 900px) {
       .right-panel {
         grid-template-columns: 1fr;
+        gap: 8px;
+        max-height: 340px;
       }
 
       .table-row {
-        grid-template-columns: 6% 10% 9% 28% 17% 30%;
+        grid-template-columns: 8% 12% 10% 25% 15% 30%;
+        font-size: 14px;
+        padding: 4px 2px;
+        min-height: 20px;
       }
 
       .table-header {
-        grid-template-columns: 6% 10% 9% 28% 17% 30%;
+        grid-template-columns: 8% 12% 10% 25% 15% 30%;
+        font-size: 14px;
+        padding: 5px 2px;
+      }
+
+      .header {
+        padding: 8px;
+        font-size: 16px;
+      }
+
+      .header-line {
+        font-size: 17px;
+      }
+
+      .header-sub {
+        font-size: 11px;
+        margin-top: 2px;
+        display: none;
+      }
+
+      body {
+        font-size: 11px;
+      }
+
+      .panel-title {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 2px;
+        gap: 2px;
+      }
+
+      .left-panel {
+        grid-column: 1;
+        grid-row: 1;
+        max-height: 30vh;
+        overflow-y: auto;
+      }
+
+      .middle-panel {
+        grid-column: 1;
+        grid-row: 2;
+        max-height: 30vh;
+        overflow-y: auto;
+      }
+
+      .right-panel {
+        grid-column: 1;
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: auto;
+      }
+
+      .right-panel > .panel {
+        height: auto;
+        max-height: 250px;
+        min-height: 0;
+      }
+
+      .right-panel .panel-title {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      .right-panel .table-header {
+        font-size: 10px;
+        padding: 4px 3px;
+      }
+
+      .table-row {
+        grid-template-columns: 10% 12% 10% 23% 15% 30%;
+        font-size: 10px;
+        padding: 4px 2px;
+        min-height: 18px;
+        gap: 1px;
+      }
+
+      .table-header {
+        grid-template-columns: 10% 12% 10% 23% 15% 30%;
+        font-size: 10px;
+      }
+
+      .header {
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+
+      .header-line {
+        font-size: 13px;
+      }
+
+      .header-sub {
+        display: none;
+      }
+
+      body {
+        font-size: 11px;
+      }
+
+      .panel {
+        padding: 6px;
+      }
+
+      .panel-title {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      .header {
+        padding: 6px;
+        font-size: 12px;
+      }
+
+      .header-line {
+        font-size: 13px;
+      }
+
+      .header-sub {
+        font-size: 10px;
+        display: none;
+      }
+
+      body {
+        font-size: 11px;
+      }
+
+      .table-row {
+        grid-template-columns: 5% 8% 8% 25% 15% 39%;
+        font-size: 10px;
+      }
+
+      .table-header {
+        grid-template-columns: 5% 8% 8% 25% 15% 39%;
+        font-size: 10px;
+      }
+
+      .panel-title {
+        font-size: 11px;
+        padding: 5px 6px;
+      }
+
+      .metric-number {
+        font-size: 16px;
+      }
+
+      .metric-label {
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 2px;
+        gap: 2px;
+      }
+
+      .screen {
+        padding: 0;
+      }
+
+      .header {
+        padding: 4px;
+        font-size: 11px;
+      }
+
+      .header-line {
+        font-size: 12px;
+        letter-spacing: 0;
+      }
+
+      .header-sub {
+        display: none;
+      }
+
+      body {
+        font-size: 10px;
+      }
+
+      .panel {
+        padding: 6px;
+      }
+
+      .panel-title {
+        font-size: 10px;
+        padding: 4px 5px;
+      }
+
+      .table-row {
+        grid-template-columns: 4% 7% 7% 24% 14% 44%;
+        font-size: 9px;
+        padding: 2px 0;
+      }
+
+      .table-header {
+        grid-template-columns: 4% 7% 7% 24% 14% 44%;
+        font-size: 9px;
+        padding: 4px 1px;
+      }
+
+      .table-cell {
+        padding: 0 1px;
+      }
+
+      .metric-number {
+        font-size: 14px;
+      }
+
+      .metric-label {
+        font-size: 9px;
+      }
+
+      .pagination-controls {
+        font-size: 10px;
+        padding: 6px;
+      }
+
+      .status-bar {
+        font-size: 10px;
+        padding: 4px 6px;
+        height: 24px;
       }
     }
   </style>
@@ -568,72 +984,72 @@
         <div class="panel-title">SYSTEM STATUS</div>
 
         <!-- Status Indicator -->
-        <div style="padding: 6px 8px; border-bottom: 1px solid rgba(0,212,255,0.3); background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.04) 100%); display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="color: #00ff88; font-size: 12px; animation: pulse 2s infinite;">●</span>
-            <span style="color: #00d4ff;">SYSTEM:</span>
-            <span style="color: #00ff88; font-weight: 700;" id="system-status">PROTECTED</span>
+        <div style="padding: 10px; border-bottom: 1px solid rgba(0,212,255,0.3); background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.04) 100%); display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #66ff88; font-size: 14px; animation: pulse 2s infinite;">●</span>
+            <span style="color: #66d4ff;">SYSTEM:</span>
+            <span style="color: #66ff88; font-weight: 700;" id="system-status">PROTECTED</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #00d4ff;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #66d4ff;">
             <span>UPDATED:</span>
-            <span id="last-update" style="color: #00ff88; font-weight: 700; font-family: 'IBM Plex Mono', monospace;">--:--</span>
+            <span id="last-update" style="color: #66ff88; font-weight: 700; font-family: 'IBM Plex Mono', monospace;">--:--:--</span>
           </div>
         </div>
 
         <!-- Quick Metrics -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 6px; background: rgba(0,212,255,0.04); border-bottom: 1px solid rgba(0,212,255,0.15);">
-          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
-            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">RESPONSE</div>
-            <div id="metric-response" style="font-size: 11px; font-weight: 900; color: #00ff88;">--ms</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: rgba(0,212,255,0.04); border-bottom: 1px solid rgba(0,212,255,0.15);">
+          <div style="text-align: center; padding: 8px; border: 1px solid rgba(0,212,255,0.2); border-radius: 3px;">
+            <div style="font-size: 10px; color: #66d4ff; margin-bottom: 4px; font-weight: 700;">RESPONSE TIME</div>
+            <div id="metric-response" style="font-size: 13px; font-weight: 900; color: #66ff88;">--ms</div>
           </div>
-          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
-            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">DETECT</div>
-            <div id="metric-detection" style="font-size: 11px; font-weight: 900; color: #ffd93d;">--%</div>
+          <div style="text-align: center; padding: 8px; border: 1px solid rgba(0,212,255,0.2); border-radius: 3px;">
+            <div style="font-size: 10px; color: #66d4ff; margin-bottom: 4px; font-weight: 700;">DETECTION RATE</div>
+            <div id="metric-detection" style="font-size: 13px; font-weight: 900; color: #ffd93d;">--%</div>
           </div>
-          <div style="text-align: center; padding: 4px; border: 1px solid rgba(0,212,255,0.2); border-radius: 2px;">
-            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; font-weight: 700;">UPTIME</div>
-            <div id="metric-uptime" style="font-size: 11px; font-weight: 900; color: #00ff88;">--h</div>
+          <div style="text-align: center; padding: 8px; border: 1px solid rgba(0,212,255,0.2); border-radius: 3px;">
+            <div style="font-size: 10px; color: #66d4ff; margin-bottom: 4px; font-weight: 700;">UPTIME</div>
+            <div id="metric-uptime" style="font-size: 13px; font-weight: 900; color: #66ff88;">--h</div>
           </div>
         </div>
 
         <!-- Threat Level -->
-        <div style="padding: 6px 8px; background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.05) 100%); border-bottom: 1px solid rgba(0,212,255,0.3); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <span style="font-size: 10px; color: #00d4ff; font-weight: 700; letter-spacing: 0.3px;">THREAT</span>
-          <span id="threat-level" style="color: #00ff88; padding: 2px 8px; background: rgba(0,255,136,0.25); border: 1px solid #00ff88; border-radius: 2px; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0,255,136,0.3);">LOW</span>
+        <div style="padding: 10px; background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.05) 100%); border-bottom: 2px solid rgba(0,212,255,0.3); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 11px; color: #66d4ff; font-weight: 700; letter-spacing: 0.5px;">THREAT LEVEL</span>
+          <span id="threat-level" style="color: #66ff88; padding: 4px 12px; background: rgba(0,255,136,0.25); border: 2px solid #66ff88; border-radius: 3px; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 12px rgba(0,255,136,0.3);">LOW</span>
         </div>
 
         <!-- Health Score -->
-        <div style="padding: 6px 8px; background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.05) 100%); border-bottom: 1px solid rgba(0,212,255,0.3);">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #00d4ff; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 4px;">
-            <span>HEALTH</span>
-            <span id="health-score" style="color: #00ff88; font-weight: 900; font-size: 11px;">100%</span>
+        <div style="padding: 10px; background: linear-gradient(90deg, rgba(0,255,136,0.08) 0%, rgba(0,212,255,0.05) 100%); border-bottom: 2px solid rgba(0,212,255,0.3);">
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 11px; color: #66d4ff; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">
+            <span>HEALTH SCORE</span>
+            <span id="health-score" style="color: #66ff88; font-weight: 900; font-size: 13px;">100%</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 2px; height: 14px; background: rgba(0,20,40,0.6); border: 1px solid rgba(0,212,255,0.3); border-radius: 1px; overflow: hidden; padding: 1px;">
-            <div id="health-bar" style="height: 12px; background: linear-gradient(90deg, #00ff88 0%, #00ff88 100%); border-radius: 1px; width: 100%; transition: width 0.3s ease, background 0.3s ease; box-shadow: 0 0 8px rgba(0,255,136,0.3);"></div>
+          <div style="display: flex; align-items: center; gap: 4px; height: 18px; background: rgba(0,20,40,0.6); border: 1px solid rgba(0,212,255,0.3); border-radius: 2px; overflow: hidden; padding: 1px;">
+            <div id="health-bar" style="height: 16px; background: linear-gradient(90deg, #66ff88 0%, #66ff88 100%); border-radius: 1px; width: 100%; transition: width 0.3s ease, background 0.3s ease; box-shadow: 0 0 10px rgba(0,255,136,0.4);"></div>
           </div>
         </div>
 
         <!-- Key Metrics Grid - Improved spacing & visual hierarchy -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; border-bottom: 1px solid rgba(0,212,255,0.3); background: rgba(15,31,53,0.5); flex: 1; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; border-bottom: 1px solid rgba(0,212,255,0.3); background: rgba(15,31,53,0.5);">
           <!-- Metric 1: Total -->
-          <div style="background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,212,255,0.05) 100%); border: 1px solid #00d4ff; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
-            <div style="font-size: 9px; color: #00d4ff; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">TOTAL</div>
-            <div id="total-detail" style="font-size: 18px; font-weight: 900; color: #00ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
+          <div style="background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,212,255,0.05) 100%); border: 1.5px solid #66d4ff; border-radius: 3px; padding: 10px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 10px; color: #66d4ff; margin-bottom: 4px; letter-spacing: 0.5px; font-weight: 700;">TOTAL ATTACKS</div>
+            <div id="total-detail" style="font-size: 24px; font-weight: 900; color: #66ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
           </div>
           <!-- Metric 2: Critical -->
-          <div style="background: linear-gradient(135deg, rgba(255,107,107,0.12) 0%, rgba(255,107,107,0.05) 100%); border: 1px solid #ff6b6b; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
-            <div style="font-size: 9px; color: #ff6b6b; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">CRITICAL</div>
-            <div id="ratelimit" style="font-size: 18px; font-weight: 900; color: #ff6b6b; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
+          <div style="background: linear-gradient(135deg, rgba(255,107,107,0.12) 0%, rgba(255,107,107,0.05) 100%); border: 1.5px solid #dd8888; border-radius: 3px; padding: 10px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 10px; color: #dd8888; margin-bottom: 4px; letter-spacing: 0.5px; font-weight: 700;">CRITICAL THREATS</div>
+            <div id="ratelimit" style="font-size: 24px; font-weight: 900; color: #dd8888; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0000</div>
           </div>
           <!-- Metric 3: RCE -->
-          <div style="background: linear-gradient(135deg, rgba(255,211,61,0.12) 0%, rgba(255,211,61,0.05) 100%); border: 1px solid #ffd93d; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
-            <div style="font-size: 9px; color: #ffd93d; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">RCE</div>
-            <div id="rce" style="font-size: 16px; font-weight: 900; color: #ffd93d; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
+          <div style="background: linear-gradient(135deg, rgba(255,211,61,0.12) 0%, rgba(255,211,61,0.05) 100%); border: 1.5px solid #ffd93d; border-radius: 3px; padding: 10px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 10px; color: #ffd93d; margin-bottom: 4px; letter-spacing: 0.5px; font-weight: 700;">RCE ATTEMPTS</div>
+            <div id="rce" style="font-size: 22px; font-weight: 900; color: #ffd93d; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
           </div>
           <!-- Metric 4: SQL -->
-          <div style="background: linear-gradient(135deg, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0.05) 100%); border: 1px solid #00ff88; border-radius: 2px; padding: 6px; text-align: center; transition: all 0.3s ease;">
-            <div style="font-size: 9px; color: #00ff88; margin-bottom: 2px; letter-spacing: 0.3px; font-weight: 700;">SQL</div>
-            <div id="sql" style="font-size: 16px; font-weight: 900; color: #00ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
+          <div style="background: linear-gradient(135deg, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0.05) 100%); border: 1.5px solid #66ff88; border-radius: 3px; padding: 10px; text-align: center; transition: all 0.3s ease;">
+            <div style="font-size: 10px; color: #66ff88; margin-bottom: 4px; letter-spacing: 0.5px; font-weight: 700;">SQL INJECTION</div>
+            <div id="sql" style="font-size: 22px; font-weight: 900; color: #66ff88; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;">0</div>
           </div>
         </div>
 
@@ -641,24 +1057,24 @@
 
       <!-- MIDDLE: Attack Log -->
       <div class="panel middle-panel">
-        <div class="panel-title" style="border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ATTACK TIMELINE (LAST HOUR)
-          <span id="timeline-warning" style="display: none; margin-left: 8px; font-size: 11px; color: #ff6b6b; font-weight: 700; animation: pulse 0.8s infinite;">🚨 SPIKE DETECTED</span>
+        <div class="panel-title" style="border-bottom: 2px solid #66d4ff; padding-bottom: 8px;">ATTACK TIMELINE (24H)
+          <span id="timeline-warning" style="display: none; margin-left: 8px; font-size: 11px; color: #dd8888; font-weight: 700; animation: pulse 0.8s infinite;">🚨 SPIKE DETECTED</span>
         </div>
-        <div id="timeline-container" style="height: 130px; margin: 8px 0; padding: 8px; background: rgba(0,20,40,0.5); border: 1px solid #00d4ff; border-radius: 2px; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.1); opacity: 1; transition: opacity 0.3s ease;">
+        <div id="timeline-container" style="height: 130px; margin: 8px 0; padding: 8px; background: rgba(0,20,40,0.5); border: 1px solid #66d4ff; border-radius: 2px; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.1); opacity: 1; transition: opacity 0.3s ease;">
           <canvas id="timeline-chart"></canvas>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 8px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.2); border-radius: 2px; margin-top: 6px;">
           <div style="text-align: center; font-size: 10px;">
-            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">CURRENT</div>
-            <div id="timeline-current" style="color: #00ff88; font-size: 13px; font-weight: 900;">0/min</div>
+            <div style="color: #66d4ff; font-weight: 700; margin-bottom: 2px;">CURRENT</div>
+            <div id="timeline-current" style="color: #66ff88; font-size: 13px; font-weight: 900;">0/min</div>
           </div>
           <div style="text-align: center; font-size: 10px;">
-            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">AVERAGE</div>
+            <div style="color: #66d4ff; font-weight: 700; margin-bottom: 2px;">AVERAGE</div>
             <div id="timeline-avg" style="color: #ffd93d; font-size: 13px; font-weight: 900;">0/min</div>
           </div>
           <div style="text-align: center; font-size: 10px;">
-            <div style="color: #00d4ff; font-weight: 700; margin-bottom: 2px;">PEAK</div>
-            <div id="timeline-peak" style="color: #ff6b6b; font-size: 13px; font-weight: 900;">0/min</div>
+            <div style="color: #66d4ff; font-weight: 700; margin-bottom: 2px;">PEAK</div>
+            <div id="timeline-peak" style="color: #dd8888; font-size: 13px; font-weight: 900;">0/min</div>
           </div>
         </div>
 
@@ -677,40 +1093,40 @@
       </div>
 
       <!-- RIGHT: 3-Column Horizontal Layout -->
-      <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; max-height: 90px; margin-bottom: 8px;">
+      <div class="right-panel">
         <!-- TOP ATTACKERS -->
         <div class="panel" style="padding: 4px; min-height: 0;">
           <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">TOP ATTACKERS</div>
-          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
-            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
-              <div style="color: #00d4ff;">IP</div>
-              <div style="text-align: right; color: #00d4ff;">HITS</div>
+          <div class="table-container" style="padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 50px; gap: 4px; padding: 2px 3px; font-size: 9px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #66d4ff;">IP</div>
+              <div style="text-align: right; color: #66d4ff;">HITS</div>
             </div>
-            <div id="attackers-content" style="font-size: 10px;"></div>
+            <div id="attackers-content" style="font-size: 11px;"></div>
           </div>
         </div>
 
         <!-- STATISTICS -->
         <div class="panel" style="padding: 4px; min-height: 0;">
           <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">STATISTICS</div>
-          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
-            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
-              <div style="color: #00d4ff;">TYPE</div>
-              <div style="text-align: right; color: #00d4ff;">COUNT</div>
+          <div class="table-container" style="padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 50px; gap: 4px; padding: 2px 3px; font-size: 9px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #66d4ff;">TYPE</div>
+              <div style="text-align: right; color: #66d4ff;">COUNT</div>
             </div>
-            <div id="stats-content" style="font-size: 10px;"></div>
+            <div id="stats-content" style="font-size: 11px;"></div>
           </div>
         </div>
 
         <!-- THREAT BREAKDOWN -->
         <div class="panel" style="padding: 4px; min-height: 0;">
           <div class="panel-title" style="padding: 2px 4px; font-size: 11px; margin-bottom: 0;">THREAT BREAKDOWN</div>
-          <div class="table-container" style="min-height: 100px; max-height: 150px; padding: 0; overflow-y: auto;">
-            <div class="table-header" style="display: grid; grid-template-columns: 1fr 80px; gap: 4px; padding: 4px 6px; font-size: 10px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
-              <div style="color: #00d4ff;">TYPE</div>
-              <div style="text-align: right; color: #00d4ff;">COUNT</div>
+          <div class="table-container" style="padding: 0; overflow-y: auto;">
+            <div class="table-header" style="display: grid; grid-template-columns: 1fr 50px; gap: 4px; padding: 2px 3px; font-size: 9px; font-weight: 700; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; background: #0f1f35; z-index: 5;">
+              <div style="color: #66d4ff;">TYPE</div>
+              <div style="text-align: right; color: #66d4ff;">COUNT</div>
             </div>
-            <div id="threat-breakdown-content" style="font-size: 10px;"></div>
+            <div id="threat-breakdown-content" style="font-size: 11px;"></div>
           </div>
         </div>
       </div>
@@ -738,9 +1154,10 @@
         saveScrollPosition(); // Save scroll before reload
 
         // Fetch lightweight APIs (each optimized for its panel)
-        const [countRes, statsRes, attackersRes, attacksRes, timelineRes] = await Promise.all([
+        const [countRes, statsRes, severityRes, attackersRes, attacksRes, timelineRes] = await Promise.all([
           fetch('/api/count'),
           fetch('/api/statistics'),
+          fetch('/api/severity-stats'),
           fetch('/api/top-attackers'),
           fetch(`/api/attacks?page=${currentPage}&limit=${pageSize}`),
           fetch('/api/timeline-data')
@@ -748,6 +1165,7 @@
 
         const countData = await countRes.json();
         const statsData = await statsRes.json();
+        const severityData = await severityRes.json();
         const attackersData = await attackersRes.json();
         const data = await attacksRes.json();
         const timelineData = await timelineRes.json();
@@ -756,7 +1174,8 @@
         const total = countData.total || 0;
         const rce = statsData.byType?.RCE || 0;
         const sql = statsData.byType?.['SQL Injection'] || 0;
-        const critical = rce; // CRITICAL = RCE count
+        const criticalCount = severityData.bySeverity?.CRITICAL || 0;
+        const highCount = severityData.bySeverity?.HIGH || 0;
 
         // Update system status elements (if they exist)
         const updateElement = (id, value) => {
@@ -766,30 +1185,31 @@
         updateElement('rce', rce);
         updateElement('sql', sql);
         updateElement('total-detail', padZero(total, 4));
-        updateElement('ratelimit', padZero(critical || 0));
+        updateElement('ratelimit', padZero(criticalCount || 0));
         updateElement('last-update', new Date().toLocaleTimeString());
 
-        // Threat level calculation
+        // Threat level calculation - based on critical percentage
+        const criticalPercentage = total > 0 ? (criticalCount / total) * 100 : 0;
         let threatLevel = 'LOW';
-        let threatColor = '#00ff88';
+        let threatColor = '#66ff88';
         let threatBgColor = 'rgba(0,255,136,0.2)';
-        let threatBorderColor = '#00ff88';
+        let threatBorderColor = '#66ff88';
 
-        if (critical >= 10) {
+        if (criticalPercentage >= 10 || criticalCount >= 1000) {
           threatLevel = 'CRITICAL';
-          threatColor = '#ff6b6b';
+          threatColor = '#dd8888';
           threatBgColor = 'rgba(255,107,107,0.2)';
-          threatBorderColor = '#ff6b6b';
-        } else if (critical >= 5) {
+          threatBorderColor = '#dd8888';
+        } else if (criticalPercentage >= 5 || criticalCount >= 100) {
           threatLevel = 'HIGH';
           threatColor = '#ffd93d';
           threatBgColor = 'rgba(255,211,61,0.2)';
           threatBorderColor = '#ffd93d';
-        } else if (critical >= 1) {
+        } else if (criticalPercentage >= 1 || criticalCount >= 10) {
           threatLevel = 'MEDIUM';
-          threatColor = '#00d4ff';
+          threatColor = '#66d4ff';
           threatBgColor = 'rgba(0,212,255,0.2)';
-          threatBorderColor = '#00d4ff';
+          threatBorderColor = '#66d4ff';
         }
 
         const threatLevelEl = document.getElementById('threat-level');
@@ -800,18 +1220,18 @@
           threatLevelEl.style.borderColor = threatBorderColor;
         }
 
-        // Health score calculation (100 - (critical threats * 5))
-        const healthScore = Math.max(0, Math.min(100, 100 - (critical * 3)));
+        // Health score calculation - percentage-based: 100 × (total - critical) / total
+        const healthScore = total > 0 ? Math.round(((total - criticalCount) / total) * 100) : 100;
         updateElement('health-score', healthScore + '%');
         const healthBar = document.getElementById('health-bar');
         if (healthBar) {
           healthBar.style.width = healthScore + '%';
           if (healthScore >= 80) {
-            healthBar.style.background = 'linear-gradient(90deg, #00ff88, #00ff88)';
+            healthBar.style.background = 'linear-gradient(90deg, #66ff88, #66ff88)';
           } else if (healthScore >= 50) {
             healthBar.style.background = 'linear-gradient(90deg, #ffd93d, #ffd93d)';
           } else {
-            healthBar.style.background = 'linear-gradient(90deg, #ff6b6b, #ff6b6b)';
+            healthBar.style.background = 'linear-gradient(90deg, #dd8888, #dd8888)';
           }
         }
 
@@ -819,7 +1239,7 @@
         const systemStatusEl = document.getElementById('system-status');
         if (systemStatusEl) {
           systemStatusEl.textContent = healthScore >= 50 ? 'PROTECTED' : 'THREATENED';
-          systemStatusEl.style.color = healthScore >= 50 ? '#00ff88' : '#ff6b6b';
+          systemStatusEl.style.color = healthScore >= 50 ? '#66ff88' : '#dd8888';
         }
 
         // Update quick metrics
@@ -876,12 +1296,12 @@
         // Add pagination controls - keep separate from scroll
         const paginationHtml = `
           <div class="pagination-controls">
-            ${currentPage > 1 ? `<a href="#" onclick="goToPage(1, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">◄◄</a>` : ''}
-            ${currentPage > 1 ? `<a href="#" onclick="goToPage(${currentPage - 1}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">◄</a>` : ''}
+            ${currentPage > 1 ? `<a href="#" onclick="goToPage(1, ${totalAttacks}); return false;" style="color: #66d4ff; text-decoration: none; margin: 0 4px;">◄◄</a>` : ''}
+            ${currentPage > 1 ? `<a href="#" onclick="goToPage(${currentPage - 1}, ${totalAttacks}); return false;" style="color: #66d4ff; text-decoration: none; margin: 0 4px;">◄</a>` : ''}
             <span style="color: #ffd93d; margin: 0 8px;">Page ${currentPage} / ${totalPages}</span>
-            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${currentPage + 1}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">►</a>` : ''}
-            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${totalPages}, ${totalAttacks}); return false;" style="color: #00d4ff; text-decoration: none; margin: 0 4px;">►►</a>` : ''}
-            <span style="color: #00d4ff; margin-left: 12px;">Total: ${padZero(totalAttacks, 5)} attacks</span>
+            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${currentPage + 1}, ${totalAttacks}); return false;" style="color: #66d4ff; text-decoration: none; margin: 0 4px;">►</a>` : ''}
+            ${currentPage < totalPages ? `<a href="#" onclick="goToPage(${totalPages}, ${totalAttacks}); return false;" style="color: #66d4ff; text-decoration: none; margin: 0 4px;">►►</a>` : ''}
+            <span style="color: #66d4ff; margin-left: 12px;">Total: ${padZero(totalAttacks, 5)} attacks</span>
           </div>
         `;
 
@@ -909,8 +1329,8 @@
           .slice(0, 8)
           .map((att, idx) => `
             <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
-              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${att.ip}</div>
-              <div style="font-weight: 900; color: #ff6b6b; text-align: right;">${att.count}</div>
+              <div style="color: #66d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${att.ip}</div>
+              <div style="font-weight: 900; color: #dd8888; text-align: right;">${att.count}</div>
             </div>
           `)
           .join('');
@@ -922,8 +1342,8 @@
           .slice(0, 8)
           .map(([type, count]) => `
             <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
-              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
-              <div style="font-weight: 900; color: #00ff88; text-align: right;">${count}</div>
+              <div style="color: #66d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
+              <div style="font-weight: 900; color: #66ff88; text-align: right;">${count}</div>
             </div>
           `)
           .join('');
@@ -935,7 +1355,7 @@
           .slice(0, 8)
           .map(([type, count]) => `
             <div style="display: grid; grid-template-columns: 1fr 70px; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(0,212,255,0.15); align-items: center; font-size: 10px;">
-              <div style="color: #00d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
+              <div style="color: #66d4ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${type}</div>
               <div style="font-weight: 900; color: #ffd93d; text-align: right;">${count}</div>
             </div>
           `)
@@ -948,7 +1368,7 @@
         const dbStatusEl = document.getElementById('db-status');
         const dbStatusTextEl = document.getElementById('db-status-text');
         if (dbStatusEl && dbStatusTextEl) {
-          dbStatusEl.style.color = '#ff6b6b';
+          dbStatusEl.style.color = '#dd8888';
           dbStatusEl.textContent = '●';
           dbStatusTextEl.textContent = 'Disconnected';
         }
@@ -1105,7 +1525,7 @@
 
     function renderTimelineChart(timelineData) {
       if (!timelineData || timelineData.length === 0) {
-        document.getElementById('timeline-container').innerHTML = '<div style="color: #00d4ff; padding: 20px; text-align: center;">No attacks in last hour</div>';
+        document.getElementById('timeline-container').innerHTML = '<div style="color: #66d4ff; padding: 20px; text-align: center;">No attacks in last hour</div>';
         return;
       }
 
@@ -1170,7 +1590,7 @@
           datasets: [{
             label: 'Attacks/min',
             data: counts,
-            borderColor: '#00d4ff',
+            borderColor: '#66d4ff',
             backgroundColor: gradient,
             borderWidth: 3,
             fill: true,
@@ -1180,24 +1600,24 @@
                 const value = ctx.p1DataIndex < counts.length ? counts[ctx.p1DataIndex] : 0;
                 const peak = Math.max(...counts, 1);
                 const intensity = value / peak;
-                if (intensity > 0.7) return '#ff6b6b';
+                if (intensity > 0.7) return '#dd8888';
                 if (intensity > 0.4) return '#ffd93d';
-                return '#00d4ff';
+                return '#66d4ff';
               }
             },
             pointBackgroundColor: (ctx) => {
               const value = counts[ctx.dataIndex];
               const peak = Math.max(...counts, 1);
               const intensity = value / peak;
-              if (intensity > 0.7) return '#ff6b6b';
+              if (intensity > 0.7) return '#dd8888';
               if (intensity > 0.4) return '#ffd93d';
-              return '#00ff88';
+              return '#66ff88';
             },
-            pointBorderColor: '#00d4ff',
+            pointBorderColor: '#66d4ff',
             pointBorderWidth: 2,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointHoverBackgroundColor: '#ff6b6b',
+            pointHoverBackgroundColor: '#dd8888',
             pointHoverBorderColor: '#ffffff'
           }]
         },
@@ -1210,7 +1630,7 @@
               display: true,
               position: 'top',
               labels: {
-                color: '#00ff88',
+                color: '#66ff88',
                 font: { family: "'IBM Plex Mono', monospace", size: 11, weight: 'bold' },
                 padding: 12,
                 usePointStyle: true,
@@ -1225,7 +1645,7 @@
             y: {
               beginAtZero: true,
               ticks: {
-                color: '#00d4ff',
+                color: '#66d4ff',
                 font: { family: "'IBM Plex Mono', monospace", size: 10 },
                 stepSize: Math.ceil(Math.max(...counts) / 5)
               },
@@ -1237,7 +1657,7 @@
             },
             x: {
               ticks: {
-                color: '#00d4ff',
+                color: '#66d4ff',
                 font: { family: "'IBM Plex Mono', monospace", size: 10 },
                 maxRotation: 45,
                 minRotation: 0
