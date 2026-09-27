@@ -101,7 +101,7 @@
       grid-column: 1 / -1;
       grid-row: 2;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 15px;
       min-height: 0;
       height: 100%;
@@ -142,7 +142,7 @@
       color: #0a1428;
       padding: 10px 12px;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 19px;
       margin-bottom: 0;
       border-radius: 2px;
       flex-shrink: 0;
@@ -172,7 +172,7 @@
 
     .section-title {
       font-weight: 700;
-      font-size: 15px;
+      font-size: 19px;
       color: #66ff88;
       margin-bottom: 8px;
       text-transform: uppercase;
@@ -184,21 +184,21 @@
       display: grid;
       grid-template-columns: 50% 50%;
       gap: 6px;
-      margin: 5px 0;
-      font-size: 15px;
+      margin: 6px 0;
+      font-size: 19px;
     }
 
     .field-label {
       text-align: right;
       color: #66d4ff;
       font-weight: 600;
-      font-size: 15px;
+      font-size: 19px;
     }
 
     .field-value {
       font-weight: 700;
       color: #66ff88;
-      font-size: 15px;
+      font-size: 19px;
     }
 
     .field-value.critical {
@@ -227,7 +227,7 @@
     }
 
     .metric-number {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       color: #66ff88;
       line-height: 1.3;
@@ -235,7 +235,7 @@
     }
 
     .metric-label {
-      font-size: 14px;
+      font-size: 19px;
       color: #66d4ff;
       margin-top: 4px;
       text-transform: uppercase;
@@ -273,9 +273,10 @@
     #threat-breakdown-content > div {
       display: flex;
       align-items: center;
-      min-height: 24px;
-      padding: 6px 10px;
+      min-height: 36px;
+      padding: 10px 14px;
       flex-shrink: 0;
+      font-size: 19px;
     }
 
     #attackers-content {
@@ -288,9 +289,10 @@
     #attackers-content > div {
       display: flex;
       align-items: center;
-      min-height: 24px;
-      padding: 6px 10px;
+      min-height: 36px;
+      padding: 10px 14px;
       flex-shrink: 0;
+      font-size: 19px;
     }
 
     #stats-content {
@@ -303,20 +305,21 @@
     #stats-content > div {
       display: flex;
       align-items: center;
-      min-height: 24px;
-      padding: 6px 10px;
+      min-height: 36px;
+      padding: 10px 14px;
       flex-shrink: 0;
+      font-size: 19px;
     }
 
     .table-header {
       background: linear-gradient(90deg, #1a4d7a 0%, #0d2b45 100%);
       border-bottom: 2px solid #66ff88;
-      padding: 8px 4px;
+      padding: 12px 8px;
       display: grid;
       grid-template-columns: 6% 10% 9% 28% 17% 30%;
       gap: 2px;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 19px;
       color: #66ff88;
       position: sticky;
       top: 0;
@@ -330,11 +333,11 @@
       display: grid;
       grid-template-columns: 6% 10% 9% 28% 17% 30%;
       gap: 2px;
-      padding: 6px 4px;
+      padding: 10px 8px;
       border-bottom: 1px solid rgba(102, 212, 255, 0.1);
-      font-size: 15px;
+      font-size: 19px;
       background: transparent;
-      min-height: 24px;
+      min-height: 32px;
       transition: background-color 0.3s ease, opacity 0.3s ease;
       opacity: 1;
       line-height: 1.5;
@@ -406,9 +409,9 @@
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      padding: 0 4px;
+      padding: 0 8px;
       min-width: 0;
-      font-size: 15px;
+      font-size: 19px;
       letter-spacing: 0.1px;
     }
 
