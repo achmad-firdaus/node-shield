@@ -224,25 +224,62 @@ class NodeShield {
     return ldapPatterns.some(pattern => queryStr.includes(pattern));
   }
 
+  detectAttack(payload) {
+    const attackTypes = [
+      { detector: this.detectSQLInjection.bind(this), type: 'SQL Injection' },
+      { detector: this.detectRCE.bind(this), type: 'RCE' },
+      { detector: this.detectPathTraversal.bind(this), type: 'Path Traversal' },
+      { detector: this.detectCommandInjection.bind(this), type: 'Command Injection' },
+      { detector: this.detectXSS.bind(this), type: 'XSS' },
+      { detector: this.detectNoSQLInjection.bind(this), type: 'NoSQL Injection' },
+      { detector: this.detectXXE.bind(this), type: 'XXE' },
+      { detector: this.detectLDAPInjection.bind(this), type: 'LDAP Injection' }
+    ];
+
+    for (const { detector, type } of attackTypes) {
+      if (detector(payload)) {
+        return type;
+      }
+    }
+    return null;
+  }
+
+  scanData(data, endpoint, clientIP) {
+    const detectedAttacks = [];
+
+    if (typeof data === 'object' && data !== null) {
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof value === 'string') {
+          const attackType = this.detectAttack(value);
+          if (attackType) {
+            detectedAttacks.push({ attackType, payload: value, source: key });
+          }
+        }
+      }
+    } else if (typeof data === 'string') {
+      const attackType = this.detectAttack(data);
+      if (attackType) {
+        detectedAttacks.push({ attackType, payload: data, source: 'direct' });
+      }
+    }
+
+    for (const attack of detectedAttacks) {
+      this.logAttack(attack.attackType, endpoint, attack.payload, { param: attack.source }, clientIP);
+    }
+
+    return detectedAttacks;
+  }
+
   middleware() {
     return (req, res, next) => {
-      const originalQuery = req.query.q || '';
-      const originalCmd = req.query.cmd || '';
-      const originalFile = req.query.file || '';
+      const clientIP = req.ip || req.connection.remoteAddress || '0.0.0.0';
 
-      if (originalQuery && this.detectSQLInjection(originalQuery)) {
-        this.logAttack('SQL Injection', req.path, originalQuery, { param: 'q' });
-        return res.status(400).json({ error: 'SQL injection detected and blocked' });
-      }
-
-      if (originalCmd && this.detectRCE(originalCmd)) {
-        this.logAttack('RCE', req.path, originalCmd, { param: 'cmd' });
-        return res.status(400).json({ error: 'RCE attempt detected and blocked' });
-      }
-
-      if (originalFile && this.detectPathTraversal(originalFile)) {
-        this.logAttack('Path Traversal', req.path, originalFile, { param: 'file' });
-        return res.status(400).json({ error: 'Path traversal detected and blocked' });
+      // Scan all query parameters
+      if (req.query && Object.keys(req.query).length > 0) {
+        const attacks = this.scanData(req.query, req.path, clientIP);
+        if (attacks.length > 0) {
+          return res.status(400).json({ error: `${attacks[0].attackType} detected and blocked` });
+        }
       }
 
       next();

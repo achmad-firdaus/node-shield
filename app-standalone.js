@@ -111,26 +111,14 @@ function parseBodyData(req) {
 }
 
 function checkAttacksInData(data, shield, pathname, clientIP, res) {
-  const detectionMethods = [
-    { detector: 'detectSQLInjection', type: 'SQL Injection' },
-    { detector: 'detectRCE', type: 'RCE' },
-    { detector: 'detectPathTraversal', type: 'Path Traversal' },
-    { detector: 'detectXSS', type: 'XSS' },
-    { detector: 'detectCommandInjection', type: 'Command Injection' },
-    { detector: 'detectNoSQLInjection', type: 'NoSQL Injection' },
-    { detector: 'detectXXE', type: 'XXE' },
-    { detector: 'detectLDAPInjection', type: 'LDAP Injection' }
-  ];
-
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === 'string') {
-      for (const { detector, type } of detectionMethods) {
-        if (shield[detector](value)) {
-          shield.logAttack(type, pathname, value, { param: key, source: 'body' }, clientIP);
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: `${type} detected and blocked` }));
-          return true;
-        }
+      const attackType = shield.detectAttack(value);
+      if (attackType) {
+        shield.logAttack(attackType, pathname, value, { param: key, source: 'body' }, clientIP);
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: `${attackType} detected and blocked` }));
+        return true;
       }
     }
   }
@@ -138,24 +126,20 @@ function checkAttacksInData(data, shield, pathname, clientIP, res) {
 }
 
 function scanHeaders(headers, shield, pathname, clientIP, res) {
-  const headersToCheck = ['user-agent', 'referer', 'cookie', 'authorization', 'x-custom-header'];
-  const detectionMethods = [
-    { detector: 'detectSQLInjection', type: 'SQL Injection' },
-    { detector: 'detectRCE', type: 'RCE' },
-    { detector: 'detectXSS', type: 'XSS' },
-    { detector: 'detectCommandInjection', type: 'Command Injection' }
+  const headersToCheck = [
+    'user-agent', 'referer', 'cookie', 'authorization',
+    'x-forwarded-for', 'x-original-url', 'x-rewrite-url', 'content-type'
   ];
 
   for (const headerName of headersToCheck) {
     const headerValue = headers[headerName];
-    if (headerValue) {
-      for (const { detector, type } of detectionMethods) {
-        if (shield[detector](headerValue)) {
-          shield.logAttack(type, pathname, headerValue, { source: 'header', header: headerName }, clientIP);
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: `${type} in header detected and blocked` }));
-          return true;
-        }
+    if (headerValue && typeof headerValue === 'string') {
+      const attackType = shield.detectAttack(headerValue);
+      if (attackType) {
+        shield.logAttack(attackType, pathname, headerValue, { source: 'header', header: headerName }, clientIP);
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: `${attackType} in header detected and blocked` }));
+        return true;
       }
     }
   }
@@ -200,61 +184,17 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Check query parameters
-    if (query.q && shield.detectSQLInjection(query.q)) {
-      shield.logAttack('SQL Injection', pathname, query.q, { param: 'q', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'SQL injection detected and blocked' }));
-      return;
-    }
-
-    if (query.cmd && shield.detectRCE(query.cmd)) {
-      shield.logAttack('RCE', pathname, query.cmd, { param: 'cmd', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'RCE attempt detected and blocked' }));
-      return;
-    }
-
-    if (query.file && shield.detectPathTraversal(query.file)) {
-      shield.logAttack('Path Traversal', pathname, query.file, { param: 'file', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'Path traversal detected and blocked' }));
-      return;
-    }
-
-    if (query.input && shield.detectXSS(query.input)) {
-      shield.logAttack('XSS', pathname, query.input, { param: 'input', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'XSS attempt detected and blocked' }));
-      return;
-    }
-
-    if (query.shell && shield.detectCommandInjection(query.shell)) {
-      shield.logAttack('Command Injection', pathname, query.shell, { param: 'shell', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'Command injection detected and blocked' }));
-      return;
-    }
-
-    if (query.nosql && shield.detectNoSQLInjection(query.nosql)) {
-      shield.logAttack('NoSQL Injection', pathname, query.nosql, { param: 'nosql', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'NoSQL injection detected and blocked' }));
-      return;
-    }
-
-    if (query.xml && shield.detectXXE(query.xml)) {
-      shield.logAttack('XXE', pathname, query.xml, { param: 'xml', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'XXE attack detected and blocked' }));
-      return;
-    }
-
-    if (query.ldap && shield.detectLDAPInjection(query.ldap)) {
-      shield.logAttack('LDAP Injection', pathname, query.ldap, { param: 'ldap', source: 'query' }, clientIP);
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'LDAP injection detected and blocked' }));
-      return;
+    // Scan all query parameters for attacks
+    for (const [param, value] of Object.entries(query)) {
+      if (typeof value === 'string') {
+        const attackType = shield.detectAttack(value);
+        if (attackType) {
+          shield.logAttack(attackType, pathname, value, { param, source: 'query' }, clientIP);
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: `${attackType} detected and blocked` }));
+          return;
+        }
+      }
     }
 
     // Parse and check request body for POST requests
