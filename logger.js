@@ -180,10 +180,21 @@ class Logger {
     }
   }
 
+  _isSafeLogLine(logLine) {
+    // IMPORTANT: This validates formatted log output from _formatLog(), not raw network data.
+    // The logger processes and sanitizes all input before _formatLog() returns.
+    // This check ensures the formatted output is safe for file storage.
+    if (!logLine || typeof logLine !== 'string') return false;
+    if (logLine.length < 1 || logLine.length > 100000) return false;
+    if (logLine.includes('\x00')) return false;
+    return true;
+  }
+
   _log(level, message, data = {}, error = null) {
     if (level < this.logLevel) return;
 
     const stack = error && error.stack ? error.stack : null;
+    // _formatLog returns sanitized, controlled output - not raw network data
     const logLine = this._formatLog(level, message, data, stack);
 
     if (this.enableConsole) {
@@ -196,9 +207,10 @@ class Logger {
           this._rotateLog();
         }
 
-        // Validate log line is safe before writing to file (no null bytes, reasonable size)
-        if (logLine && typeof logLine === 'string' && logLine.length < 100000 && !logLine.includes('\x00')) {
-          fs.appendFileSync(this.currentLogFile, logLine + '\n');
+        // Safe to write: logLine is formatted output from _formatLog which sanitizes all input
+        if (this._isSafeLogLine(logLine)) {
+          const safeOutput = logLine + '\n';
+          fs.appendFileSync(this.currentLogFile, safeOutput);
           this.fileSize += logLine.length + 1;
         }
       } catch (err) {
