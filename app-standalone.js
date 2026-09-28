@@ -398,18 +398,24 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Database not available' }));
     }
   } else if (pathname === '/api/timeline') {
-    const interval = query.interval || 'minute';
-    const intervalMs = interval === 'hour' ? 3600000 : 60000;
+    // Validate interval to prevent SQL injection (DATE_TRUNC interval cannot be parameterized)
+    const allowedIntervals = ['minute', 'hour', 'day'];
+    let interval = query.interval || 'minute';
 
-    shield.pool.query(
-      `SELECT
+    if (!allowedIntervals.includes(interval)) {
+      interval = 'minute';
+    }
+
+    const intervalMs = interval === 'hour' ? 3600000 : 60000;
+    const sql = `SELECT
         DATE_TRUNC('${interval}', timestamp) as time_bucket,
         COUNT(*) as count
       FROM attacks
       WHERE timestamp > NOW() - INTERVAL '1 hour'
-      GROUP BY DATE_TRUNC('${interval}', timestamp)
-      ORDER BY time_bucket ASC`
-    ).then(result => {
+      GROUP BY DATE_TRUNC('${interval}'::text, timestamp)
+      ORDER BY time_bucket ASC`;
+
+    shield.pool.query(sql).then(result => {
       const timeline = result.rows.map(row => ({
         timestamp: row.time_bucket,
         count: parseInt(row.count)

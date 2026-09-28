@@ -4,7 +4,7 @@ const Logger = require('./logger');
 class NodeShield {
   constructor(logger = null) {
     this.logger = logger || new Logger({ serviceName: 'shield' });
-    this.ipRates = {};
+    this.ipRates = new Map(); // Use Map to prevent prototype pollution attacks
     this.attackCounter = 0;
     this.useInMemoryDB = !process.env.DB_HOST;
     this.inMemoryAttacks = [];
@@ -150,16 +150,17 @@ class NodeShield {
     }
 
     // Track IP rate for brute force detection
-    if (!this.ipRates[ip]) {
-      this.ipRates[ip] = { count: 0, firstSeen: Date.now(), types: {} };
+    if (!this.ipRates.has(ip)) {
+      this.ipRates.set(ip, { count: 0, firstSeen: Date.now(), types: {} });
     }
-    this.ipRates[ip].count++;
-    this.ipRates[ip].types[type] = (this.ipRates[ip].types[type] || 0) + 1;
+    const ipData = this.ipRates.get(ip);
+    ipData.count++;
+    ipData.types[type] = (ipData.types[type] || 0) + 1;
 
     // Check for rate limit (>5 attacks in 10 sec = brute force)
-    const timeSinceFirst = Date.now() - this.ipRates[ip].firstSeen;
-    if (timeSinceFirst < 10000 && this.ipRates[ip].count > 5) {
-      this.logger.critical('Rate limited attack detected', { type, ip, count: this.ipRates[ip].count });
+    const timeSinceFirst = Date.now() - ipData.firstSeen;
+    if (timeSinceFirst < 10000 && ipData.count > 5) {
+      this.logger.critical('Rate limited attack detected', { type, ip, count: ipData.count });
     } else {
       const logMethod = severity === 'CRITICAL' ? 'critical' : severity === 'HIGH' ? 'warn' : 'info';
       this.logger[logMethod](`Attack detected: ${type}`, { type, ip, severity, endpoint });
