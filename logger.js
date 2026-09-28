@@ -101,9 +101,52 @@ class Logger {
     }
   }
 
+  _redactSensitiveData(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    const sensitiveKeys = new Set([
+      'password', 'passwd', 'pwd',
+      'api_key', 'apikey', 'api-key',
+      'token', 'access_token', 'refresh_token', 'auth_token',
+      'secret', 'client_secret', 'app_secret',
+      'authorization', 'auth', 'bearer',
+      'cookie', 'cookies', 'session', 'sessionid',
+      'credit_card', 'creditcard', 'ccn', 'cvv',
+      'ssn', 'social_security',
+      'private_key', 'privatekey',
+      'db_password', 'database_password',
+      'jwt', 'signature',
+      'credentials', 'credential',
+      'username', 'user', 'email' // redact emails for privacy
+    ]);
+
+    const redacted = Array.isArray(obj) ? [...obj] : { ...obj };
+
+    const redactValue = (val) => {
+      if (val && typeof val === 'object') {
+        return this._redactSensitiveData(val);
+      }
+      return '***REDACTED***';
+    };
+
+    for (const key in redacted) {
+      if (redacted.hasOwnProperty(key)) {
+        const lowerKey = key.toLowerCase();
+        if (sensitiveKeys.has(lowerKey)) {
+          redacted[key] = redactValue(redacted[key]);
+        } else if (redacted[key] && typeof redacted[key] === 'object') {
+          redacted[key] = this._redactSensitiveData(redacted[key]);
+        }
+      }
+    }
+
+    return redacted;
+  }
+
   _formatLog(level, message, data, stack) {
     const timestamp = new Date().toISOString();
     const levelName = LOG_LEVEL_NAMES[level] || 'UNKNOWN';
+    const redactedData = data ? this._redactSensitiveData(data) : null;
 
     if (this.logFormat === 'json') {
       const entry = {
@@ -111,14 +154,14 @@ class Logger {
         level: levelName,
         service: this.serviceName,
         message,
-        ...(data && Object.keys(data).length > 0 && { data }),
+        ...(redactedData && Object.keys(redactedData).length > 0 && { data: redactedData }),
         ...(stack && { stack })
       };
       return JSON.stringify(entry);
     } else {
       let line = `[${timestamp}] [${levelName}] ${message}`;
-      if (data && Object.keys(data).length > 0) {
-        line += ` ${JSON.stringify(data)}`;
+      if (redactedData && Object.keys(redactedData).length > 0) {
+        line += ` ${JSON.stringify(redactedData)}`;
       }
       if (stack) {
         line += `\n${stack}`;
