@@ -422,23 +422,37 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Database not available' }));
     }
   } else if (pathname === '/api/timeline') {
-    // Validate interval to prevent SQL injection (DATE_TRUNC interval cannot be parameterized)
-    const allowedIntervals = ['minute', 'hour', 'day'];
-    let interval = query.interval || 'minute';
-
-    if (!allowedIntervals.includes(interval)) {
-      interval = 'minute';
-    }
-
-    const intervalMs = interval === 'hour' ? 3600000 : 60000;
-    const sql = `SELECT
-        DATE_TRUNC('${interval}', timestamp) as time_bucket,
+    // Pre-built safe SQL queries - no user input interpolation
+    const queriesByInterval = {
+      minute: `SELECT
+        DATE_TRUNC('minute', timestamp) as time_bucket,
         COUNT(*) as count
       FROM attacks
       WHERE timestamp > NOW() - INTERVAL '1 hour'
-      GROUP BY DATE_TRUNC('${interval}'::text, timestamp)
-      ORDER BY time_bucket ASC`;
+      GROUP BY DATE_TRUNC('minute', timestamp)
+      ORDER BY time_bucket ASC`,
+      hour: `SELECT
+        DATE_TRUNC('hour', timestamp) as time_bucket,
+        COUNT(*) as count
+      FROM attacks
+      WHERE timestamp > NOW() - INTERVAL '1 hour'
+      GROUP BY DATE_TRUNC('hour', timestamp)
+      ORDER BY time_bucket ASC`,
+      day: `SELECT
+        DATE_TRUNC('day', timestamp) as time_bucket,
+        COUNT(*) as count
+      FROM attacks
+      WHERE timestamp > NOW() - INTERVAL '1 hour'
+      GROUP BY DATE_TRUNC('day', timestamp)
+      ORDER BY time_bucket ASC`
+    };
 
+    let interval = query.interval || 'minute';
+    if (!queriesByInterval.hasOwnProperty(interval)) {
+      interval = 'minute';
+    }
+
+    const sql = queriesByInterval[interval];
     shield.pool.query(sql).then(result => {
       const timeline = result.rows.map(row => ({
         timestamp: row.time_bucket,
