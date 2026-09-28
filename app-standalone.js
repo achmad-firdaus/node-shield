@@ -678,7 +678,7 @@ server.listen(config.port, () => {
     logger.warn('⚠️  SECURITY WARNING: Using default API key. Set API_KEY environment variable!');
     logger.warn(`Generate one: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`);
   } else if (config.enableAuth) {
-    logger.info(`🔐 API Authentication: ENABLED (API_KEY=${config.apiKey.substring(0, 8)}...)`);
+    logger.info('🔐 API Authentication: ENABLED (configured via API_KEY environment variable)');
   }
 
   logger.info(`📝 Configuration: NODE_ENV=${config.nodeEnv}, CORS=${config.corsEnabled ? 'enabled' : 'disabled'}`);
