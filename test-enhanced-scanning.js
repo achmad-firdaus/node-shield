@@ -152,7 +152,8 @@ function runTest(test, index) {
     });
 
     req.on('error', (err) => {
-      console.log(`✗ [${index + 1}/${tests.length}] ${test.name} - Connection error: ${err.message}`);
+      const sanitizedError = (err.message || '').replace(/[\r\n]/g, ' ').substring(0, 500);
+      console.log(`✗ [${index + 1}/${tests.length}] ${test.name} - Connection error: ${sanitizedError}`);
       resolve(false);
     });
 

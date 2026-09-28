@@ -143,9 +143,19 @@ class Logger {
     return redacted;
   }
 
+  _sanitizeLogInput(input) {
+    if (typeof input !== 'string') return input;
+    // Remove newlines, carriage returns, and other control characters to prevent log injection
+    return input
+      .replace(/[\r\n]/g, ' ')  // Replace newlines with spaces
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')  // Remove other control chars
+      .substring(0, 1000);  // Limit length
+  }
+
   _formatLog(level, message, data, stack) {
     const timestamp = new Date().toISOString();
     const levelName = LOG_LEVEL_NAMES[level] || 'UNKNOWN';
+    const sanitizedMessage = this._sanitizeLogInput(message);
     const redactedData = data ? this._redactSensitiveData(data) : null;
 
     if (this.logFormat === 'json') {
@@ -153,18 +163,18 @@ class Logger {
         timestamp,
         level: levelName,
         service: this.serviceName,
-        message,
+        message: sanitizedMessage,
         ...(redactedData && Object.keys(redactedData).length > 0 && { data: redactedData }),
-        ...(stack && { stack })
+        ...(stack && { stack: this._sanitizeLogInput(stack) })
       };
       return JSON.stringify(entry);
     } else {
-      let line = `[${timestamp}] [${levelName}] ${message}`;
+      let line = `[${timestamp}] [${levelName}] ${sanitizedMessage}`;
       if (redactedData && Object.keys(redactedData).length > 0) {
         line += ` ${JSON.stringify(redactedData)}`;
       }
       if (stack) {
-        line += `\n${stack}`;
+        line += `\n${this._sanitizeLogInput(stack)}`;
       }
       return line;
     }
@@ -186,8 +196,11 @@ class Logger {
           this._rotateLog();
         }
 
-        fs.appendFileSync(this.currentLogFile, logLine + '\n');
-        this.fileSize += logLine.length + 1;
+        // Validate log line is safe before writing to file (no null bytes, reasonable size)
+        if (logLine && typeof logLine === 'string' && logLine.length < 100000 && !logLine.includes('\x00')) {
+          fs.appendFileSync(this.currentLogFile, logLine + '\n');
+          this.fileSize += logLine.length + 1;
+        }
       } catch (err) {
         console.error('[Logger] Failed to write log:', err.message);
       }
