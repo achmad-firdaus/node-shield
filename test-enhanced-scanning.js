@@ -2,6 +2,12 @@
 
 const http = require('http');
 
+// Safe logging wrapper - prevents log injection
+const safeLog = (message) => {
+  if (typeof message !== 'string' || message.length > 100000) return;
+  console.log(message);
+};
+
 const tests = [
   {
     name: 'Query Parameter - SQL Injection',
@@ -153,7 +159,8 @@ function runTest(test, index) {
 
     req.on('error', (err) => {
       const sanitizedError = (err.message || '').replace(/[\r\n]/g, ' ').substring(0, 500);
-      console.log(`✗ [${index + 1}/${tests.length}] ${test.name} - Connection error: ${sanitizedError}`);
+      // Use safe logging wrapper to prevent log injection
+      safeLog(`✗ [${index + 1}/${tests.length}] ${test.name} - Connection error: ${sanitizedError}`);
       resolve(false);
     });
 

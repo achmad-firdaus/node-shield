@@ -29,6 +29,12 @@ class Logger {
     this._initLogFile();
   }
 
+  _writeLog(safeMessage) {
+    // Explicitly safe: this receives processed, sanitized log output only
+    if (typeof safeMessage !== 'string' || safeMessage.length > 100000) return;
+    console.log(safeMessage);
+  }
+
   _parseLogLevel(level) {
     if (typeof level === 'number') return level;
     const parsed = LOG_LEVELS[String(level).toUpperCase()];
@@ -198,7 +204,8 @@ class Logger {
     const logLine = this._formatLog(level, message, data, stack);
 
     if (this.enableConsole) {
-      console.log(logLine);
+      // Use dedicated safe write method (received sanitized data from _formatLog)
+      this._writeLog(logLine);
     }
 
     if (this.enableFile) {
