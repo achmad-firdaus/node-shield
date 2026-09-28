@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: node-shield-db
     environment:
-      POSTGRES_DB: ${DB_NAME:-node_shield}
-      POSTGRES_USER: ${DB_USER:-shield_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-shield_password}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -34,11 +34,11 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       DB_HOST: postgres
       DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME:-node_shield}
-      DB_USER: ${DB_USER:-shield_user}
-      DB_PASSWORD: ${DB_PASSWORD:-shield_password}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       PORT: ${PORT:-3001}
-      API_KEY: ${API_KEY:-your-secure-api-key-here-min-32-chars}
+      API_KEY: ${API_KEY}
       ENABLE_AUTH: ${ENABLE_AUTH:-true}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMAT: ${LOG_FORMAT:-json}

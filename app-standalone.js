@@ -45,6 +45,30 @@ function getClientIP(req) {
          '0.0.0.0';
 }
 
+function isValidIP(ip) {
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  const ipv6Regex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+
+  if (ipv4Regex.test(ip)) {
+    const parts = ip.split('.');
+    return parts.every(part => {
+      const num = parseInt(part);
+      return num >= 0 && num <= 255;
+    });
+  }
+  return ipv6Regex.test(ip);
+}
+
+function isValidPattern(pattern) {
+  // Validate pattern length (prevent ReDoS via extremely long patterns)
+  if (!pattern || pattern.length > 500) return false;
+  // Ensure it's a string
+  if (typeof pattern !== 'string') return false;
+  // Pattern should not contain null bytes
+  if (pattern.includes('\0')) return false;
+  return true;
+}
+
 function validateAPIKey(req) {
   if (!config.enableAuth) return true;
   if (config.apiKey === 'development-key-not-for-production' && config.nodeEnv === 'development') return true;
@@ -222,8 +246,8 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200);
     res.end(dashboardHTML);
   } else if (pathname === '/api/attacks') {
-    const page = parseInt(query.page) || 1;
-    const limit = parseInt(query.limit) || 100;
+    const page = Math.max(1, Math.min(parseInt(query.page) || 1, 10000)); // Prevent negative/excessive paging
+    const limit = Math.max(1, Math.min(parseInt(query.limit) || 100, 1000)); // Cap at 1000 per request
 
     Promise.all([
       shield.getAttacks(page, limit),
@@ -454,10 +478,20 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (type === 'ip') {
+        if (!isValidIP(value)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid IP address format' }));
+          return;
+        }
         shield.addIPToWhitelist(value);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to whitelist` }));
       } else if (type === 'pattern') {
+        if (!isValidPattern(value)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid pattern (max 500 chars)' }));
+          return;
+        }
         shield.addPatternToWhitelist(value);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to whitelist` }));
@@ -519,10 +553,20 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (type === 'ip') {
+        if (!isValidIP(value)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid IP address format' }));
+          return;
+        }
         shield.addIPToBlacklist(value);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `IP ${value} added to blacklist` }));
       } else if (type === 'pattern') {
+        if (!isValidPattern(value)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid pattern (max 500 chars)' }));
+          return;
+        }
         shield.addPatternToBlacklist(value);
         res.writeHead(200);
         res.end(JSON.stringify({ message: `Pattern "${value}" added to blacklist` }));
